@@ -8,7 +8,7 @@ from models import (
 )
 
 
-def get_billing_data_for_client(company_data, assets_data, users_data, year, month):
+def get_billing_data_for_client(company_data, assets_data, users_data, year, month, tickets_data=None):
     """
     A comprehensive function to calculate billing details for a specific client and period.
     This is the core logic that powers both the dashboard and the breakdown view.
@@ -19,6 +19,7 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
         users_data: List of user/contact dicts from Codex
         year: Billing year
         month: Billing month (1-12)
+        tickets_data: List of ticket dicts from Codex (optional, will fetch from Codex if None)
 
     Returns:
         Dict with billing breakdown and all related data
@@ -65,13 +66,23 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
     if not plan_details:
         return None
 
-    # Fetch tickets for the entire year for accurate calculations
-    # Note: last_updated_at is stored as string, so we use substring to extract year
-    current_year = datetime.now().year
-    all_tickets_this_year = TicketDetail.query.filter(
-        TicketDetail.company_account_number == account_number,
-        db.func.substring(TicketDetail.last_updated_at, 1, 4) == str(current_year)
-    ).all()
+    # Use provided tickets or fetch from Codex
+    if tickets_data is None:
+        # Fallback: try to fetch from Codex (requires importing codex_client)
+        from app.codex_client import get_company_tickets
+        tickets_data = get_company_tickets(account_number, year=datetime.now().year)
+
+    # Convert ticket dicts to objects for compatibility
+    class TicketObj:
+        def __init__(self, data):
+            self.ticket_id = data.get('ticket_id')
+            self.ticket_number = data.get('ticket_number')
+            self.subject = data.get('subject')
+            self.last_updated_at = data.get('last_updated_at')
+            self.closed_at = data.get('closed_at')
+            self.total_hours_spent = data.get('total_hours_spent', 0)
+
+    all_tickets_this_year = [TicketObj(t) for t in tickets_data] if tickets_data else []
 
     # --- Determine the Effective Billing Rates ---
     effective_rates = {

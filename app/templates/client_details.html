@@ -121,6 +121,9 @@
             <h2 style="margin-top: 20px;">Total Bill: ${{ "%.2f"|format(data.receipt_data.total) }}</h2>
 
             <div style="margin-top: 20px;">
+                <a href="/ledger/client/{{ account_number }}/export/quickbooks?year={{ year }}&month={{ month }}" class="btn btn--primary">
+                    <span class="btn__label">Export to QuickBooks (CSV)</span>
+                </a>
                 <a href="/ledger/client/{{ account_number }}/settings" class="btn btn--primary">
                     <span class="btn__label">Billing Settings</span>
                 </a>

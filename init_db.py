@@ -176,24 +176,10 @@ def create_sample_scheduler_jobs():
 
     sample_jobs = [
         {
-            'job_name': 'Sync Companies/Assets/Users from Codex',
+            'job_name': 'Diagnostic: Test Codex Connectivity',
             'script_path': 'sync_from_codex.py',
-            'schedule_cron': '0 */4 * * *',
-            'description': 'Syncs company, asset, and user data from Codex service (primary data source)',
-            'enabled': True
-        },
-        {
-            'job_name': 'Sync Ticket Details from Freshservice',
-            'script_path': 'sync_tickets_from_freshservice.py',
-            'schedule_cron': '0 */6 * * *',
-            'description': 'Pulls ticket data and hours from Freshservice API for billing calculations',
-            'enabled': False
-        },
-        {
-            'job_name': 'Sync Backup Data from Datto RMM',
-            'script_path': 'sync_backup_data_from_datto.py',
-            'schedule_cron': '0 2 * * *',
-            'description': 'Pulls backup storage data from Datto RMM UDF fields for backup billing',
+            'schedule_cron': '0 */12 * * *',
+            'description': 'Diagnostic tool to verify Codex API connectivity and data availability',
             'enabled': False
         }
     ]
@@ -216,78 +202,6 @@ def create_sample_scheduler_jobs():
     print("✓ Scheduler jobs setup complete!")
 
 
-def configure_freshservice(config):
-    """Configure Freshservice API credentials."""
-    print("\n" + "="*70)
-    print("Freshservice Configuration (Optional - for ticket sync)")
-    print("="*70)
-
-    # Check for existing config
-    existing_key = config.get('freshservice', 'api_key', fallback='')
-    existing_domain = config.get('freshservice', 'domain', fallback='integotecllc.freshservice.com')
-
-    if existing_key:
-        reconfigure = input(f"\nFreshservice already configured (domain: {existing_domain}). Reconfigure? (y/n): ").lower() == 'y'
-        if not reconfigure:
-            print("Keeping existing Freshservice configuration.")
-            return
-    else:
-        configure = input("\nConfigure Freshservice? (y/n): ").lower() == 'y'
-        if not configure:
-            print("Skipping Freshservice configuration.")
-            return
-
-    api_key = input(f"Freshservice API Key [{existing_key[:10] + '...' if existing_key else ''}]: ").strip() or existing_key
-    domain = input(f"Freshservice Domain [{existing_domain}]: ").strip() or existing_domain
-
-    if api_key:
-        if not config.has_section('freshservice'):
-            config.add_section('freshservice')
-        config.set('freshservice', 'api_key', api_key)
-        config.set('freshservice', 'domain', domain)
-        print("✓ Freshservice credentials saved")
-    else:
-        print("⚠ No API key provided, skipping Freshservice configuration")
-
-
-def configure_datto(config):
-    """Configure Datto RMM API credentials."""
-    print("\n" + "="*70)
-    print("Datto RMM Configuration (Optional - for backup data sync)")
-    print("="*70)
-
-    # Check for existing config
-    existing_endpoint = config.get('datto', 'api_endpoint', fallback='https://pinotage-api.centrastage.net')
-    existing_key = config.get('datto', 'api_key', fallback='')
-    existing_secret = config.get('datto', 'api_secret', fallback='')
-    existing_udf = config.get('datto', 'backup_udf_id', fallback='6')
-
-    if existing_key:
-        reconfigure = input(f"\nDatto RMM already configured (endpoint: {existing_endpoint}). Reconfigure? (y/n): ").lower() == 'y'
-        if not reconfigure:
-            print("Keeping existing Datto RMM configuration.")
-            return
-    else:
-        configure = input("\nConfigure Datto RMM? (y/n): ").lower() == 'y'
-        if not configure:
-            print("Skipping Datto RMM configuration.")
-            return
-
-    api_endpoint = input(f"Datto API Endpoint [{existing_endpoint}]: ").strip() or existing_endpoint
-    api_key = input(f"Datto API Key [{existing_key[:10] + '...' if existing_key else ''}]: ").strip() or existing_key
-    api_secret = input(f"Datto API Secret [{existing_secret[:10] + '...' if existing_secret else ''}]: ").strip() or existing_secret
-    backup_udf_id = input(f"Backup UDF ID [{existing_udf}]: ").strip() or existing_udf
-
-    if api_key and api_secret:
-        if not config.has_section('datto'):
-            config.add_section('datto')
-        config.set('datto', 'api_endpoint', api_endpoint)
-        config.set('datto', 'api_key', api_key)
-        config.set('datto', 'api_secret', api_secret)
-        config.set('datto', 'backup_udf_id', backup_udf_id)
-        print("✓ Datto RMM credentials saved")
-    else:
-        print("⚠ API key or secret missing, skipping Datto RMM configuration")
 
 
 def init_db():
@@ -323,9 +237,14 @@ def init_db():
             if input("\nRetry? (y/n): ").lower() != 'y':
                 sys.exit("Database configuration aborted.")
 
-    # Configure external systems
-    configure_freshservice(config)
-    configure_datto(config)
+    # Note: Ledger pulls all operational data from Codex via API
+    # Configure Codex connection in services.json, not here
+    print("\n" + "="*70)
+    print("IMPORTANT: Ledger pulls data from Codex, not external services")
+    print("="*70)
+    print("Configure Codex connection in services.json:")
+    print('  {"codex": {"url": "http://localhost:5001", "api_key": "..."}}')
+    print("="*70)
 
     # Save configuration
     with open(config_path, 'w') as configfile:

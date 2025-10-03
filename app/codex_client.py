@@ -55,16 +55,31 @@ def get_all_companies():
         return []
 
 
-def get_all_companies_with_details():
+def get_all_companies_with_details(include_tickets=False, year=None):
     """
-    Fetch all companies with their assets, contacts, and locations in one bulk call.
+    Fetch all companies with their assets, contacts, locations, and optionally tickets in one bulk call.
     Optimized for dashboard - reduces API calls from 5N+1 to just 1.
 
+    Args:
+        include_tickets: If True, includes ticket data in response
+        year: Optional year filter for tickets
+
     Returns:
-        list: List of dicts with 'company', 'assets', 'contacts', 'locations' keys
+        list: List of dicts with 'company', 'assets', 'contacts', 'locations', and optionally 'tickets' keys
     """
     try:
-        response = call_service('codex', '/api/companies/bulk')
+        endpoint = '/api/companies/bulk'
+        params = []
+
+        if include_tickets:
+            params.append('include_tickets=true')
+        if year:
+            params.append(f'year={year}')
+
+        if params:
+            endpoint += '?' + '&'.join(params)
+
+        response = call_service('codex', endpoint)
         if response.status_code == 200:
             return response.json()
         elif response.status_code == 404:
@@ -144,6 +159,35 @@ def get_company_locations(account_number):
         return []
 
 
+def get_company_tickets(account_number, year=None):
+    """
+    Fetch all tickets for a company from Codex.
+
+    Args:
+        account_number: Company account number
+        year: Optional year filter (e.g., 2025)
+
+    Returns:
+        list: List of ticket dicts
+    """
+    try:
+        endpoint = f'/api/companies/{account_number}/tickets'
+        if year:
+            endpoint += f'?year={year}'
+
+        response = call_service('codex', endpoint)
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            return []
+        else:
+            current_app.logger.error(f"Failed to fetch tickets for {account_number}: {response.status_code}")
+            return []
+    except Exception as e:
+        current_app.logger.error(f"Error fetching tickets for {account_number}: {e}")
+        return []
+
+
 def get_billing_data_from_codex(account_number):
     """
     Fetch all necessary data from Codex for billing calculations.
@@ -153,7 +197,8 @@ def get_billing_data_from_codex(account_number):
             'company': company_data,
             'assets': assets_data,
             'users': users_data,
-            'locations': locations_data
+            'locations': locations_data,
+            'tickets': tickets_data
         } or None if company not found
     """
     company = get_company_data(account_number)
@@ -163,10 +208,12 @@ def get_billing_data_from_codex(account_number):
     assets = get_company_assets(account_number)
     users = get_company_contacts(account_number)
     locations = get_company_locations(account_number)
+    tickets = get_company_tickets(account_number)
 
     return {
         'company': company,
         'assets': assets,
         'users': users,
-        'locations': locations
+        'locations': locations,
+        'tickets': tickets
     }

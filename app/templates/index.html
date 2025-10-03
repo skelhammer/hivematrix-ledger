@@ -3,11 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <title>Billing Dashboard - HiveMatrix Ledger</title>
+    <style>
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+        }
+        .sortable-header:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        .sort-indicator {
+            margin-left: 5px;
+            font-size: 0.8em;
+        }
+        #search-box {
+            margin: 10px 0;
+            padding: 8px;
+            width: 300px;
+            font-size: 14px;
+        }
+        .btn-group {
+            margin: 10px 0;
+        }
+        .btn-group button {
+            margin-right: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        .contract-expired {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <div class="card">
         <div class="card__header">
-            <h1 class="card__title">Billing Dashboard</h1>
+            <h1 class="card__title">All Clients - Billing Dashboard</h1>
         </div>
         <div class="card__body">
             <p>Welcome, <strong>{{ user.name }}</strong> ({{ user.permission_level }})</p>
@@ -21,12 +66,27 @@
             </div>
             {% endif %}
 
+            <div class="btn-group">
+                <input type="text" id="search-box" placeholder="Search clients...">
+                <button id="export-csv-btn" class="btn btn--primary">
+                    <span class="btn__label">Export CSV</span>
+                </button>
+                {% if user.permission_level == 'admin' %}
+                <button id="export-zip-btn" class="btn btn--primary">
+                    <span class="btn__label">Export All Invoices (ZIP)</span>
+                </button>
+                {% endif %}
+                <button id="refresh-btn" class="btn">
+                    <span class="btn__label">Refresh</span>
+                </button>
+            </div>
+
             <div class="card" style="margin-top: 20px;">
                 <div class="card__header">
                     <h2 class="card__title">Client Billing Summary</h2>
                 </div>
                 <div class="card__body">
-                    <p>Loading billing data...</p>
+                    <p id="loading-message">Loading billing data...</p>
                     <div id="billing-table"></div>
                 </div>
             </div>
@@ -34,55 +94,197 @@
     </div>
 
     <script>
+        let billingData = [];
+        let filteredData = [];
+        let sortColumn = 'name';
+        let sortDirection = 'asc';
+
         // Fetch billing dashboard data via API
-        fetch('/ledger/api/billing/dashboard?year={{ current_year }}&month={{ current_month }}')
-            .then(response => response.json())
-            .then(data => {
-                const tableDiv = document.getElementById('billing-table');
+        function fetchBillingData() {
+            document.getElementById('loading-message').style.display = 'block';
+            fetch('/ledger/api/billing/dashboard?year={{ current_year }}&month={{ current_month }}')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('loading-message').style.display = 'none';
 
-                if (data.warning) {
-                    tableDiv.innerHTML = `
-                        <div class="card__notice card__notice--warning">
-                            <p><strong>⚠️ Warning:</strong> ${data.warning}</p>
-                            <p>Please ensure the Codex service is running and accessible.</p>
-                            <p>Check services.json configuration and verify Codex is at: <code>${data.warning.includes('Codex') ? 'http://localhost:5010' : 'unknown'}</code></p>
-                        </div>
-                    `;
-                    return;
-                }
+                    if (data.warning) {
+                        const tableDiv = document.getElementById('billing-table');
+                        tableDiv.innerHTML = `
+                            <div class="card__notice card__notice--warning">
+                                <p><strong>⚠️ Warning:</strong> ${data.warning}</p>
+                                <p>Please ensure the Codex service is running and accessible.</p>
+                            </div>
+                        `;
+                        return;
+                    }
 
-                if (data.companies.length === 0) {
-                    tableDiv.innerHTML = '<p>No billing data available. Add companies in Codex to see billing information.</p>';
-                    return;
-                }
+                    if (data.companies.length === 0) {
+                        document.getElementById('billing-table').innerHTML = '<p>No billing data available. Add companies in Codex to see billing information.</p>';
+                        return;
+                    }
 
-                let html = '<table><thead><tr>';
-                html += '<th>Company</th><th>Account #</th><th>Plan</th>';
-                html += '<th>Workstations</th><th>Servers</th><th>VMs</th><th>Users</th>';
-                html += '<th>Total Bill</th><th>Actions</th>';
-                html += '</tr></thead><tbody>';
-
-                data.companies.forEach(company => {
-                    html += '<tr>';
-                    html += `<td>${company.name}</td>`;
-                    html += `<td>${company.account_number}</td>`;
-                    html += `<td>${company.billing_plan || 'N/A'}</td>`;
-                    html += `<td>${company.workstations}</td>`;
-                    html += `<td>${company.servers}</td>`;
-                    html += `<td>${company.vms}</td>`;
-                    html += `<td>${company.users}</td>`;
-                    html += `<td>$${company.total_bill.toFixed(2)}</td>`;
-                    html += `<td><a href="/ledger/client/${company.account_number}" class="btn btn--primary"><span class="btn__label">View Details</span></a></td>`;
-                    html += '</tr>';
+                    billingData = data.companies;
+                    filteredData = [...billingData];
+                    renderTable();
+                })
+                .catch(error => {
+                    document.getElementById('loading-message').style.display = 'none';
+                    document.getElementById('billing-table').innerHTML = '<p>Error loading billing data.</p>';
+                    console.error('Error:', error);
                 });
+        }
 
-                html += '</tbody></table>';
-                tableDiv.innerHTML = html;
-            })
-            .catch(error => {
-                document.getElementById('billing-table').innerHTML = '<p>Error loading billing data.</p>';
-                console.error('Error:', error);
+        function sortData(column) {
+            if (sortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = column;
+                sortDirection = 'asc';
+            }
+
+            filteredData.sort((a, b) => {
+                let aVal = a[column];
+                let bVal = b[column];
+
+                // Handle numeric columns
+                if (['workstations', 'servers', 'vms', 'users', 'backup', 'hours', 'total_bill'].includes(column)) {
+                    aVal = parseFloat(aVal) || 0;
+                    bVal = parseFloat(bVal) || 0;
+                }
+
+                // Handle string columns
+                if (typeof aVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+
+                if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
             });
+
+            renderTable();
+        }
+
+        function filterData() {
+            const searchTerm = document.getElementById('search-box').value.toLowerCase();
+            filteredData = billingData.filter(company => {
+                return company.name.toLowerCase().includes(searchTerm) ||
+                       company.account_number.toString().includes(searchTerm) ||
+                       (company.billing_plan && company.billing_plan.toLowerCase().includes(searchTerm));
+            });
+            renderTable();
+        }
+
+        function renderTable() {
+            const tableDiv = document.getElementById('billing-table');
+
+            let html = '<table><thead><tr>';
+            html += '<th class="sortable-header" onclick="sortData(\'name\')">Company <span class="sort-indicator">' + (sortColumn === 'name' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th class="sortable-header" onclick="sortData(\'account_number\')">Account # <span class="sort-indicator">' + (sortColumn === 'account_number' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th class="sortable-header" onclick="sortData(\'billing_plan\')">Plan <span class="sort-indicator">' + (sortColumn === 'billing_plan' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th class="sortable-header" onclick="sortData(\'support_level\')">Support Level <span class="sort-indicator">' + (sortColumn === 'support_level' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th class="sortable-header" onclick="sortData(\'contract_term_length\')">Term <span class="sort-indicator">' + (sortColumn === 'contract_term_length' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th class="sortable-header" onclick="sortData(\'contract_end_date\')">Contract End <span class="sort-indicator">' + (sortColumn === 'contract_end_date' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th class="sortable-header" onclick="sortData(\'workstations\')">Workstations <span class="sort-indicator">' + (sortColumn === 'workstations' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th class="sortable-header" onclick="sortData(\'servers\')">Servers <span class="sort-indicator">' + (sortColumn === 'servers' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th class="sortable-header" onclick="sortData(\'vms\')">VMs <span class="sort-indicator">' + (sortColumn === 'vms' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th class="sortable-header" onclick="sortData(\'users\')">Users <span class="sort-indicator">' + (sortColumn === 'users' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th class="sortable-header" onclick="sortData(\'backup\')">Backup (TB) <span class="sort-indicator">' + (sortColumn === 'backup' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th class="sortable-header" onclick="sortData(\'hours\')">Hours (This Year) <span class="sort-indicator">' + (sortColumn === 'hours' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th class="sortable-header" onclick="sortData(\'total_bill\')">Total Bill <span class="sort-indicator">' + (sortColumn === 'total_bill' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
+            html += '<th>Actions</th>';
+            html += '</tr></thead><tbody>';
+
+            filteredData.forEach(company => {
+                html += '<tr>';
+                html += `<td>${company.name}</td>`;
+                html += `<td>${company.account_number}</td>`;
+                html += `<td>${company.billing_plan || 'N/A'}</td>`;
+                html += `<td>${company.support_level || 'N/A'}</td>`;
+                html += `<td>${company.contract_term_length || 'N/A'}</td>`;
+
+                // Check if contract is expired
+                const contractEndDate = company.contract_end_date;
+                const isExpired = contractEndDate && contractEndDate !== 'N/A' && contractEndDate !== 'Month to Month' && new Date(contractEndDate) < new Date();
+                html += `<td ${isExpired ? 'class="contract-expired"' : ''}>${contractEndDate || 'N/A'}</td>`;
+
+                html += `<td>${company.workstations}</td>`;
+                html += `<td>${company.servers}</td>`;
+                html += `<td>${company.vms}</td>`;
+                html += `<td>${company.users}</td>`;
+                html += `<td>${company.backup.toFixed(2)}</td>`;
+                html += `<td>${company.hours.toFixed(2)}</td>`;
+                html += `<td>$${company.total_bill.toFixed(2)}</td>`;
+                html += `<td><a href="/ledger/client/${company.account_number}">View Details</a></td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            html += `<p style="margin-top: 10px;">Showing ${filteredData.length} of ${billingData.length} clients</p>`;
+            tableDiv.innerHTML = html;
+        }
+
+        function exportToCSV() {
+            let csv = 'Company,Account #,Plan,Support Level,Term,Contract End,Workstations,Servers,VMs,Users,Backup (TB),Hours (This Year),Total Bill\n';
+
+            filteredData.forEach(company => {
+                csv += `"${company.name}",`;
+                csv += `"${company.account_number}",`;
+                csv += `"${company.billing_plan || 'N/A'}",`;
+                csv += `"${company.support_level || 'N/A'}",`;
+                csv += `"${company.contract_term_length || 'N/A'}",`;
+                csv += `"${company.contract_end_date || 'N/A'}",`;
+                csv += `${company.workstations},`;
+                csv += `${company.servers},`;
+                csv += `${company.vms},`;
+                csv += `${company.users},`;
+                csv += `${company.backup.toFixed(2)},`;
+                csv += `${company.hours.toFixed(2)},`;
+                csv += `${company.total_bill.toFixed(2)}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `billing_dashboard_{{ current_year }}_${String({{ current_month }}).padStart(2, '0')}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function exportAllZIP() {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/ledger/export/all_bills';
+
+            const yearInput = document.createElement('input');
+            yearInput.type = 'hidden';
+            yearInput.name = 'year';
+            yearInput.value = {{ current_year }};
+            form.appendChild(yearInput);
+
+            const monthInput = document.createElement('input');
+            monthInput.type = 'hidden';
+            monthInput.name = 'month';
+            monthInput.value = {{ current_month }};
+            form.appendChild(monthInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+
+        // Event listeners
+        document.getElementById('search-box').addEventListener('input', filterData);
+        document.getElementById('export-csv-btn').addEventListener('click', exportToCSV);
+        document.getElementById('refresh-btn').addEventListener('click', fetchBillingData);
+        {% if user.permission_level == 'admin' %}
+        document.getElementById('export-zip-btn').addEventListener('click', exportAllZIP);
+        {% endif %}
+
+        // Initial load
+        fetchBillingData();
     </script>
 </body>
 </html>
