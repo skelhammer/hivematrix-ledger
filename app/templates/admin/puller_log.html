@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Puller Log - {{ job.job_name }}</title>
+</head>
+<body>
+    <div class="card">
+        <div class="card__header">
+            <h1 class="card__title">Log: {{ job.job_name }}</h1>
+        </div>
+        <div class="card__body">
+            <p><strong>Script:</strong> <code>{{ job.script_path }}</code></p>
+            <p><strong>Last Run:</strong> {{ job.last_run or 'Never' }}</p>
+            <p>
+                <strong>Status:</strong>
+                {% if job.last_status == 'Success' %}
+                <span style="color: green;">✓ Success</span>
+                {% elif job.last_status == 'Running' %}
+                <span style="color: blue;">⏳ Running...</span>
+                {% elif job.last_status in ['Failure', 'Error'] %}
+                <span style="color: red;">✗ {{ job.last_status }}</span>
+                {% elif job.last_status == 'Timeout' %}
+                <span style="color: orange;">⚠ Timeout</span>
+                {% else %}
+                <span style="color: gray;">-</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+        <div class="card__header">
+            <h2 class="card__title">Output Log</h2>
+        </div>
+        <div class="card__body">
+            {% if job.last_run_log %}
+            <pre style="background: #f5f5f5; padding: 15px; overflow-x: auto; max-height: 600px; overflow-y: auto;">{{ job.last_run_log }}</pre>
+            {% else %}
+            <p>No log output available. This job hasn't been run yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <form method="POST" action="/ledger/admin/pullers/run/{{ job.id }}" style="display: inline;">
+            <button type="submit" class="btn btn--primary" {% if job.last_status == 'Running' %}disabled{% endif %}>
+                <span class="btn__label">▶ Run Again</span>
+            </button>
+        </form>
+        <a href="/ledger/admin/pullers" class="btn">
+            <span class="btn__label">Back to Pullers</span>
+        </a>
+    </div>
+</body>
+</html>

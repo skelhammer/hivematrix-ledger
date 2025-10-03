@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ company.name }} - Billing Settings - HiveMatrix Ledger</title>
+</head>
+<body>
+    <div class="card">
+        <div class="card__header">
+            <h1 class="card__title">Override Settings for {{ company.name }}</h1>
+        </div>
+        <div class="card__body">
+            <p><strong>Account Number:</strong> {{ company.account_number }}</p>
+            <p><a href="/ledger/client/{{ company.account_number }}" class="btn"><span class="btn__label">← Back to Billing Details</span></a></p>
+        </div>
+    </div>
+
+    <form method="POST" action="/ledger/client/{{ company.account_number }}/settings">
+        <!-- Billing Rate Overrides -->
+        <div class="card" style="margin-top: 20px;">
+            <div class="card__header">
+                <h2 class="card__title">Billing Rate Overrides</h2>
+            </div>
+            <div class="card__body">
+                <table class="table--overrides">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Default Value</th>
+                            <th>Override Value</th>
+                            <th>Enable</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Plan Override -->
+                        <tr>
+                            <td><strong>Assigned Plan</strong></td>
+                            <td>{{ company.billing_plan or 'N/A' }}</td>
+                            <td>
+                                <select name="billing_plan" class="input">
+                                    <option value="">-- No Override --</option>
+                                    {% for plan in billing_plans %}
+                                    <option value="{{ plan.billing_plan }}" {% if rate_override and rate_override.billing_plan == plan.billing_plan %}selected{% endif %}>{{ plan.billing_plan }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td><input type="checkbox" name="override_billing_plan_enabled" {% if rate_override and rate_override.override_billing_plan_enabled %}checked{% endif %}></td>
+                        </tr>
+
+                        <!-- Support Level -->
+                        <tr>
+                            <td><strong>Support Level</strong></td>
+                            <td>{{ defaults.support_level if defaults else 'N/A' }}</td>
+                            <td>
+                                <select name="support_level" class="input">
+                                    <option value="">-- No Override --</option>
+                                    <option value="Hourly" {% if rate_override and rate_override.support_level == 'Hourly' %}selected{% endif %}>Hourly</option>
+                                    <option value="Unlimited" {% if rate_override and rate_override.support_level == 'Unlimited' %}selected{% endif %}>Unlimited</option>
+                                </select>
+                            </td>
+                            <td><input type="checkbox" name="override_support_level_enabled" {% if rate_override and rate_override.override_support_level_enabled %}checked{% endif %}></td>
+                        </tr>
+
+                        <!-- Per-Item Costs -->
+                        {% macro rate_row(name, label, short_name, default_value) %}
+                        <tr>
+                            <td><strong>{{ label }}</strong></td>
+                            <td>${{ "%.2f"|format(default_value|float) if default_value is not none else 'N/A' }}</td>
+                            <td><input type="number" step="0.01" name="{{ name }}" class="input" value="{{ rate_override[name] if rate_override and rate_override[name] is not none else '' }}" placeholder="0.00"></td>
+                            <td><input type="checkbox" name="override_{{ short_name }}_enabled" {% if rate_override and rate_override['override_' + short_name + '_enabled'] %}checked{% endif %}></td>
+                        </tr>
+                        {% endmacro %}
+
+                        {{ rate_row('per_user_cost', 'Per User Cost', 'puc', defaults.per_user_cost if defaults else 0) }}
+                        {{ rate_row('per_workstation_cost', 'Per Workstation Cost', 'pwc', defaults.per_workstation_cost if defaults else 0) }}
+                        {{ rate_row('per_server_cost', 'Per Server Cost', 'psc', defaults.per_server_cost if defaults else 0) }}
+                        {{ rate_row('per_vm_cost', 'Per VM Cost', 'pvc', defaults.per_vm_cost if defaults else 0) }}
+                        {{ rate_row('per_switch_cost', 'Per Switch Cost', 'pswitchc', defaults.per_switch_cost if defaults else 0) }}
+                        {{ rate_row('per_firewall_cost', 'Per Firewall Cost', 'pfirewallc', defaults.per_firewall_cost if defaults else 0) }}
+                        {{ rate_row('per_hour_ticket_cost', 'Per Hour Ticket Cost', 'phtc', defaults.per_hour_ticket_cost if defaults else 0) }}
+                        {{ rate_row('backup_base_fee_workstation', 'Backup Base (Workstation)', 'bbfw', defaults.backup_base_fee_workstation if defaults else 0) }}
+                        {{ rate_row('backup_base_fee_server', 'Backup Base (Server)', 'bbfs', defaults.backup_base_fee_server if defaults else 0) }}
+
+                        <!-- Backup Included TB (number, not currency) -->
+                        <tr>
+                            <td><strong>Backup Included (TB)</strong></td>
+                            <td>{{ "%.2f"|format(defaults.backup_included_tb|float) if defaults and defaults.backup_included_tb is not none else 'N/A' }}</td>
+                            <td><input type="number" step="0.1" name="backup_included_tb" class="input" value="{{ rate_override.backup_included_tb if rate_override and rate_override.backup_included_tb is not none else '' }}" placeholder="1.0"></td>
+                            <td><input type="checkbox" name="override_bit_enabled" {% if rate_override and rate_override.override_bit_enabled %}checked{% endif %}></td>
+                        </tr>
+
+                        {{ rate_row('backup_per_tb_fee', 'Backup per TB Fee', 'bpt', defaults.backup_per_tb_fee if defaults else 0) }}
+
+                        <!-- Prepaid Hours -->
+                        <tr>
+                            <td><strong>Pre-paid Hours (Monthly)</strong></td>
+                            <td>{{ defaults.prepaid_hours_monthly if defaults and defaults.prepaid_hours_monthly else '0' }}</td>
+                            <td><input type="number" step="1" name="prepaid_hours_monthly" class="input" value="{{ rate_override.prepaid_hours_monthly if rate_override and rate_override.prepaid_hours_monthly is not none else '' }}" placeholder="0"></td>
+                            <td><input type="checkbox" name="override_prepaid_hours_monthly_enabled" {% if rate_override and rate_override.override_prepaid_hours_monthly_enabled %}checked{% endif %}></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Pre-paid Hours (Yearly)</strong></td>
+                            <td>{{ defaults.prepaid_hours_yearly if defaults and defaults.prepaid_hours_yearly else '0' }}</td>
+                            <td><input type="number" step="1" name="prepaid_hours_yearly" class="input" value="{{ rate_override.prepaid_hours_yearly if rate_override and rate_override.prepaid_hours_yearly is not none else '' }}" placeholder="0"></td>
+                            <td><input type="checkbox" name="override_prepaid_hours_yearly_enabled" {% if rate_override and rate_override.override_prepaid_hours_yearly_enabled %}checked{% endif %}></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Asset Billing Overrides -->
+        <div class="card" style="margin-top: 20px;">
+            <div class="card__header">
+                <h2 class="card__title">Asset Billing Overrides</h2>
+            </div>
+            <div class="card__body">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Hostname</th>
+                            <th>Detected Type</th>
+                            <th>Billing Type</th>
+                            <th>Custom Cost ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asset in assets %}
+                        <tr>
+                            <td>{{ asset.hostname }}</td>
+                            <td>{{ asset.device_type or 'Unknown' }}</td>
+                            <td>
+                                <select name="asset_billing_type_{{ asset.id }}" class="input">
+                                    <option value="">-- Use Detected --</option>
+                                    <option value="Workstation" {% if asset_overrides.get(asset.id) and asset_overrides[asset.id].billing_type == 'Workstation' %}selected{% endif %}>Workstation</option>
+                                    <option value="Server" {% if asset_overrides.get(asset.id) and asset_overrides[asset.id].billing_type == 'Server' %}selected{% endif %}>Server</option>
+                                    <option value="VM" {% if asset_overrides.get(asset.id) and asset_overrides[asset.id].billing_type == 'VM' %}selected{% endif %}>VM</option>
+                                    <option value="Switch" {% if asset_overrides.get(asset.id) and asset_overrides[asset.id].billing_type == 'Switch' %}selected{% endif %}>Switch</option>
+                                    <option value="Firewall" {% if asset_overrides.get(asset.id) and asset_overrides[asset.id].billing_type == 'Firewall' %}selected{% endif %}>Firewall</option>
+                                    <option value="No Charge" {% if asset_overrides.get(asset.id) and asset_overrides[asset.id].billing_type == 'No Charge' %}selected{% endif %}>No Charge</option>
+                                    <option value="Custom" {% if asset_overrides.get(asset.id) and asset_overrides[asset.id].billing_type == 'Custom' %}selected{% endif %}>Custom Cost</option>
+                                </select>
+                            </td>
+                            <td><input type="number" step="0.01" name="asset_custom_cost_{{ asset.id }}" class="input" placeholder="0.00" value="{{ asset_overrides[asset.id].custom_cost if asset_overrides.get(asset.id) and asset_overrides[asset.id].custom_cost is not none else '' }}"></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 20px;">Manually Added Assets</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Hostname</th>
+                            <th>Billing Type</th>
+                            <th>Cost</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asset in manual_assets %}
+                        <tr>
+                            <td>{{ asset.hostname }}</td>
+                            <td>{{ asset.billing_type }}</td>
+                            <td>${{ "%.2f"|format(asset.custom_cost|float) if asset.custom_cost is not none else '0.00' }}</td>
+                            <td>
+                                <a href="/ledger/client/{{ company.account_number }}/settings?delete_manual_asset={{ asset.id }}" class="btn btn--danger" onclick="return confirm('Delete this asset?')">
+                                    <span class="btn__label">Delete</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 20px;">Add Manual Asset</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+                    <div>
+                        <label>Hostname:</label>
+                        <input type="text" name="manual_asset_hostname" class="input" placeholder="hostname">
+                    </div>
+                    <div>
+                        <label>Billing Type:</label>
+                        <select name="manual_asset_billing_type" class="input">
+                            <option value="Workstation">Workstation</option>
+                            <option value="Server">Server</option>
+                            <option value="VM">VM</option>
+                            <option value="No Charge">No Charge</option>
+                            <option value="Custom">Custom</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Custom Cost:</label>
+                        <input type="number" step="0.01" name="manual_asset_custom_cost" class="input" placeholder="0.00">
+                    </div>
+                    <button type="submit" name="action" value="add_manual_asset" class="btn btn--primary">
+                        <span class="btn__label">Add Asset</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Billing Overrides -->
+        <div class="card" style="margin-top: 20px;">
+            <div class="card__header">
+                <h2 class="card__title">User Billing Overrides</h2>
+            </div>
+            <div class="card__body">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Employment Type</th>
+                            <th>Billing Type</th>
+                            <th>Custom Cost ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.name }} ({{ user.email }})</td>
+                            <td>{{ user.employment_type or 'Full Time' }}</td>
+                            <td>
+                                <select name="user_billing_type_{{ user.id }}" class="input">
+                                    <option value="">-- Default (Paid) --</option>
+                                    <option value="Paid" {% if user_overrides.get(user.id) and user_overrides[user.id].billing_type == 'Paid' %}selected{% endif %}>Paid</option>
+                                    <option value="No Charge" {% if user_overrides.get(user.id) and user_overrides[user.id].billing_type == 'No Charge' %}selected{% endif %}>No Charge</option>
+                                    <option value="Custom" {% if user_overrides.get(user.id) and user_overrides[user.id].billing_type == 'Custom' %}selected{% endif %}>Custom Cost</option>
+                                </select>
+                            </td>
+                            <td><input type="number" step="0.01" name="user_custom_cost_{{ user.id }}" class="input" placeholder="0.00" value="{{ user_overrides[user.id].custom_cost if user_overrides.get(user.id) and user_overrides[user.id].custom_cost is not none else '' }}"></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 20px;">Manually Added Users</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Billing Type</th>
+                            <th>Cost</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in manual_users %}
+                        <tr>
+                            <td>{{ user.full_name }}</td>
+                            <td>{{ user.billing_type }}</td>
+                            <td>${{ "%.2f"|format(user.custom_cost|float) if user.custom_cost is not none else '0.00' }}</td>
+                            <td>
+                                <a href="/ledger/client/{{ company.account_number }}/settings?delete_manual_user={{ user.id }}" class="btn btn--danger" onclick="return confirm('Delete this user?')">
+                                    <span class="btn__label">Delete</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 20px;">Add Manual User</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+                    <div>
+                        <label>Full Name:</label>
+                        <input type="text" name="manual_user_name" class="input" placeholder="John Doe">
+                    </div>
+                    <div>
+                        <label>Billing Type:</label>
+                        <select name="manual_user_billing_type" class="input">
+                            <option value="Paid">Paid</option>
+                            <option value="No Charge">No Charge</option>
+                            <option value="Custom">Custom</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Custom Cost:</label>
+                        <input type="number" step="0.01" name="manual_user_custom_cost" class="input" placeholder="0.00">
+                    </div>
+                    <button type="submit" name="action" value="add_manual_user" class="btn btn--primary">
+                        <span class="btn__label">Add User</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Line Items -->
+        <div class="card" style="margin-top: 20px;">
+            <div class="card__header">
+                <h2 class="card__title">Custom Line Items</h2>
+            </div>
+            <div class="card__body">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Billing Period</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in custom_items %}
+                        <tr>
+                            <td>{{ item.name }}</td>
+                            <td>
+                                {% if item.monthly_fee is not none %}Recurring
+                                {% elif item.yearly_fee is not none %}Yearly
+                                {% else %}One-Off{% endif %}
+                            </td>
+                            <td>${{ "%.2f"|format(item.monthly_fee or item.one_off_fee or item.yearly_fee or 0.0) }}</td>
+                            <td>
+                                {% if item.one_off_year %}{{ item.one_off_year }}-{{ "%02d"|format(item.one_off_month) }}
+                                {% elif item.yearly_bill_month %}Every month {{ item.yearly_bill_month }}
+                                {% else %}Monthly{% endif %}
+                            </td>
+                            <td>
+                                <a href="/ledger/client/{{ company.account_number }}/settings?delete_line_item={{ item.id }}" class="btn btn--danger" onclick="return confirm('Delete this line item?')">
+                                    <span class="btn__label">Delete</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 20px;">Add New Line Item</h3>
+                <div style="display: grid; gap: 10px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label>Item Name:</label>
+                            <input type="text" name="line_item_name" class="input" placeholder="Additional Service">
+                        </div>
+                        <div>
+                            <label>Item Type:</label>
+                            <select name="line_item_type" class="input" id="line_item_type">
+                                <option value="recurring">Recurring Monthly</option>
+                                <option value="one_off">One-Off Charge</option>
+                                <option value="yearly">Recurring Yearly</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="recurring_fields">
+                        <label>Monthly Fee:</label>
+                        <input type="number" step="0.01" name="line_item_recurring_fee" class="input" placeholder="0.00">
+                    </div>
+
+                    <div id="one_off_fields" style="display:none; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label>One-Off Fee:</label>
+                            <input type="number" step="0.01" name="line_item_one_off_fee" class="input" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label>Billing Month:</label>
+                            <select name="line_item_one_off_month" class="input">
+                                {% for i in range(1, 13) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="yearly_fields" style="display:none; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label>Yearly Fee:</label>
+                            <input type="number" step="0.01" name="line_item_yearly_fee" class="input" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label>Billing Month:</label>
+                            <select name="line_item_yearly_month" class="input">
+                                {% for i in range(1, 13) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" name="action" value="add_line_item" class="btn btn--primary">
+                        <span class="btn__label">Add Line Item</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div style="margin-top: 20px; margin-bottom: 40px;">
+            <button type="submit" name="action" value="save_overrides" class="btn btn--primary">
+                <span class="btn__label">💾 Save All Settings</span>
+            </button>
+            <a href="/ledger/client/{{ company.account_number }}" class="btn">
+                <span class="btn__label">Cancel</span>
+            </a>
+        </div>
+    </form>
+
+    <script>
+        // Toggle line item fields based on type
+        document.getElementById('line_item_type').addEventListener('change', function() {
+            document.getElementById('recurring_fields').style.display = this.value === 'recurring' ? 'block' : 'none';
+            document.getElementById('one_off_fields').style.display = this.value === 'one_off' ? 'grid' : 'none';
+            document.getElementById('yearly_fields').style.display = this.value === 'yearly' ? 'grid' : 'none';
+        });
+    </script>
+</body>
+</html>

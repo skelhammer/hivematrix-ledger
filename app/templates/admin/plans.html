@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Billing Plans - Admin</title>
+</head>
+<body>
+    <div class="card">
+        <div class="card__header">
+            <h1 class="card__title">Billing Plans Management</h1>
+        </div>
+        <div class="card__body">
+            <p>Configure base pricing structures for different plans and term lengths.</p>
+            <button class="btn btn--primary" onclick="showAddPlanForm()">
+                <span class="btn__label">+ Add New Plan</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Plan Form (hidden by default) -->
+    <div class="card" id="addPlanForm" style="margin-top: 20px; display: none;">
+        <div class="card__header">
+            <h2 class="card__title">Add New Billing Plan</h2>
+        </div>
+        <div class="card__body">
+            <form method="POST" action="/ledger/admin/plans/add">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label>Plan Name *</label>
+                        <input type="text" name="billing_plan" required placeholder="e.g., [PLAN-D]">
+                    </div>
+                    <div>
+                        <label>Term Length *</label>
+                        <select name="term_length" required>
+                            <option value="Month to Month">Month to Month</option>
+                            <option value="1-Year">1-Year</option>
+                            <option value="2-Year">2-Year</option>
+                            <option value="3-Year">3-Year</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Support Level *</label>
+                        <input type="text" name="support_level" required placeholder="e.g., Billed Hourly">
+                    </div>
+                    <div>
+                        <label>Per User Cost ($)</label>
+                        <input type="number" name="per_user_cost" step="0.01" value="0.00">
+                    </div>
+                    <div>
+                        <label>Per Workstation Cost ($)</label>
+                        <input type="number" name="per_workstation_cost" step="0.01" value="0.00">
+                    </div>
+                    <div>
+                        <label>Per Server Cost ($)</label>
+                        <input type="number" name="per_server_cost" step="0.01" value="0.00">
+                    </div>
+                    <div>
+                        <label>Per VM Cost ($)</label>
+                        <input type="number" name="per_vm_cost" step="0.01" value="0.00">
+                    </div>
+                    <div>
+                        <label>Per Switch Cost ($)</label>
+                        <input type="number" name="per_switch_cost" step="0.01" value="0.00">
+                    </div>
+                    <div>
+                        <label>Per Firewall Cost ($)</label>
+                        <input type="number" name="per_firewall_cost" step="0.01" value="0.00">
+                    </div>
+                    <div>
+                        <label>Per Hour Ticket Cost ($)</label>
+                        <input type="number" name="per_hour_ticket_cost" step="0.01" value="0.00">
+                    </div>
+                    <div>
+                        <label>Backup Base Fee - Workstation ($)</label>
+                        <input type="number" name="backup_base_fee_workstation" step="0.01" value="0.00">
+                    </div>
+                    <div>
+                        <label>Backup Base Fee - Server ($)</label>
+                        <input type="number" name="backup_base_fee_server" step="0.01" value="0.00">
+                    </div>
+                    <div>
+                        <label>Backup Included TB</label>
+                        <input type="number" name="backup_included_tb" step="0.01" value="1.00">
+                    </div>
+                    <div>
+                        <label>Backup Per TB Fee ($)</label>
+                        <input type="number" name="backup_per_tb_fee" step="0.01" value="0.00">
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button type="submit" class="btn btn--primary">
+                        <span class="btn__label">Create Plan</span>
+                    </button>
+                    <button type="button" class="btn" onclick="hideAddPlanForm()">
+                        <span class="btn__label">Cancel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Existing Plans -->
+    {% for plan_name, plans in grouped_plans.items() %}
+    <div class="card" style="margin-top: 20px;">
+        <div class="card__header">
+            <h2 class="card__title">{{ plan_name }}</h2>
+        </div>
+        <div class="card__body">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Term</th>
+                        <th>Support</th>
+                        <th>User</th>
+                        <th>Workstation</th>
+                        <th>Server</th>
+                        <th>VM</th>
+                        <th>Hourly</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plan in plans %}
+                    <tr>
+                        <td>{{ plan.term_length }}</td>
+                        <td>{{ plan.support_level }}</td>
+                        <td>${{ "%.2f"|format(plan.per_user_cost or 0) }}</td>
+                        <td>${{ "%.2f"|format(plan.per_workstation_cost or 0) }}</td>
+                        <td>${{ "%.2f"|format(plan.per_server_cost or 0) }}</td>
+                        <td>${{ "%.2f"|format(plan.per_vm_cost or 0) }}</td>
+                        <td>${{ "%.2f"|format(plan.per_hour_ticket_cost or 0) }}</td>
+                        <td>
+                            <button class="btn" onclick="editPlan({{ plan.id }})">
+                                <span class="btn__label">Edit</span>
+                            </button>
+                            <form method="POST" action="/ledger/admin/plans/delete/{{ plan.id }}" style="display: inline;" onsubmit="return confirm('Delete this plan?')">
+                                <button type="submit" class="btn btn--danger">
+                                    <span class="btn__label">Delete</span>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div style="margin-top: 20px;">
+        <a href="/ledger/admin/settings" class="btn">
+            <span class="btn__label">Back to Admin</span>
+        </a>
+    </div>
+
+    <script>
+        function showAddPlanForm() {
+            document.getElementById('addPlanForm').style.display = 'block';
+        }
+
+        function hideAddPlanForm() {
+            document.getElementById('addPlanForm').style.display = 'none';
+        }
+
+        function editPlan(planId) {
+            // Simple implementation - you could make this more sophisticated
+            alert('Edit plan ID: ' + planId + '. Implement edit form similar to add form.');
+        }
+    </script>
+</body>
+</html>

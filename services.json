@@ -1,0 +1,8 @@
+{
+    "codex": {
+        "url": "http://localhost:5010"
+    },
+    "core": {
+        "url": "http://localhost:5000"
+    }
+}

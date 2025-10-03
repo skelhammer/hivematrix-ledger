@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Billing Dashboard - HiveMatrix Ledger</title>
+</head>
+<body>
+    <div class="card">
+        <div class="card__header">
+            <h1 class="card__title">Billing Dashboard</h1>
+        </div>
+        <div class="card__body">
+            <p>Welcome, <strong>{{ user.name }}</strong> ({{ user.permission_level }})</p>
+            <p>Current billing period: <strong>{{ current_year }}-{{ "%02d"|format(current_month) }}</strong></p>
+
+            {% if user.permission_level == 'admin' %}
+            <div style="margin-top: 15px;">
+                <a href="/ledger/admin/settings" class="btn btn--primary">
+                    <span class="btn__label">⚙️ Admin Settings</span>
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="card" style="margin-top: 20px;">
+                <div class="card__header">
+                    <h2 class="card__title">Client Billing Summary</h2>
+                </div>
+                <div class="card__body">
+                    <p>Loading billing data...</p>
+                    <div id="billing-table"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fetch billing dashboard data via API
+        fetch('/ledger/api/billing/dashboard?year={{ current_year }}&month={{ current_month }}')
+            .then(response => response.json())
+            .then(data => {
+                const tableDiv = document.getElementById('billing-table');
+
+                if (data.warning) {
+                    tableDiv.innerHTML = `
+                        <div class="card__notice card__notice--warning">
+                            <p><strong>⚠️ Warning:</strong> ${data.warning}</p>
+                            <p>Please ensure the Codex service is running and accessible.</p>
+                            <p>Check services.json configuration and verify Codex is at: <code>${data.warning.includes('Codex') ? 'http://localhost:5010' : 'unknown'}</code></p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (data.companies.length === 0) {
+                    tableDiv.innerHTML = '<p>No billing data available. Add companies in Codex to see billing information.</p>';
+                    return;
+                }
+
+                let html = '<table><thead><tr>';
+                html += '<th>Company</th><th>Account #</th><th>Plan</th>';
+                html += '<th>Workstations</th><th>Servers</th><th>VMs</th><th>Users</th>';
+                html += '<th>Total Bill</th><th>Actions</th>';
+                html += '</tr></thead><tbody>';
+
+                data.companies.forEach(company => {
+                    html += '<tr>';
+                    html += `<td>${company.name}</td>`;
+                    html += `<td>${company.account_number}</td>`;
+                    html += `<td>${company.billing_plan || 'N/A'}</td>`;
+                    html += `<td>${company.workstations}</td>`;
+                    html += `<td>${company.servers}</td>`;
+                    html += `<td>${company.vms}</td>`;
+                    html += `<td>${company.users}</td>`;
+                    html += `<td>$${company.total_bill.toFixed(2)}</td>`;
+                    html += `<td><a href="/ledger/client/${company.account_number}" class="btn btn--primary"><span class="btn__label">View Details</span></a></td>`;
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table>';
+                tableDiv.innerHTML = html;
+            })
+            .catch(error => {
+                document.getElementById('billing-table').innerHTML = '<p>Error loading billing data.</p>';
+                console.error('Error:', error);
+            });
+    </script>
+</body>
+</html>

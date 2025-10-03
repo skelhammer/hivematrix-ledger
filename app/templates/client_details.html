@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ data.client.name }} - Billing Details</title>
+</head>
+<body>
+    <div class="card">
+        <div class="card__header">
+            <h1 class="card__title">{{ data.client.name }}</h1>
+        </div>
+        <div class="card__body">
+            <p><strong>Account Number:</strong> {{ account_number }}</p>
+            <p><strong>Billing Period:</strong> {{ year }}-{{ "%02d"|format(month) }}</p>
+            <p><strong>Billing Plan:</strong> {{ data.client.billing_plan }} ({{ data.client.contract_term_length }})</p>
+            <p><strong>Support Level:</strong> {{ data.support_level_display }}</p>
+            <p><strong>Contract End:</strong> {{ data.contract_end_date }}</p>
+            {% if data.contract_expired %}
+            <p style="color: red;"><strong>⚠️ Contract Expired</strong></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+        <div class="card__header">
+            <h2 class="card__title">Billing Breakdown</h2>
+        </div>
+        <div class="card__body">
+            <h3>Asset Charges</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Asset Name</th>
+                        <th>Type</th>
+                        <th>Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in data.receipt_data.billed_assets %}
+                    <tr>
+                        <td>{{ asset.name }}</td>
+                        <td>{{ asset.type }}</td>
+                        <td>${{ "%.2f"|format(asset.cost) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2"><strong>Total Asset Charges</strong></td>
+                        <td><strong>${{ "%.2f"|format(data.receipt_data.total_asset_charges) }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <h3 style="margin-top: 20px;">User Charges</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>User Name</th>
+                        <th>Type</th>
+                        <th>Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in data.receipt_data.billed_users %}
+                    <tr>
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.type }}</td>
+                        <td>${{ "%.2f"|format(user.cost) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2"><strong>Total User Charges</strong></td>
+                        <td><strong>${{ "%.2f"|format(data.receipt_data.total_user_charges) }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <h3 style="margin-top: 20px;">Ticket Hours</h3>
+            <p><strong>Hours This Period:</strong> {{ "%.2f"|format(data.receipt_data.hours_for_billing_period) }}</p>
+            <p><strong>Prepaid Monthly Hours:</strong> {{ "%.2f"|format(data.receipt_data.prepaid_hours_monthly) }}</p>
+            <p><strong>Billable Hours:</strong> {{ "%.2f"|format(data.receipt_data.billable_hours) }}</p>
+            <p><strong>Ticket Charges:</strong> ${{ "%.2f"|format(data.receipt_data.ticket_charge) }}</p>
+
+            <h3 style="margin-top: 20px;">Backup Charges</h3>
+            <p><strong>Total Backup:</strong> {{ "%.2f"|format(data.total_backup_tb) }} TB</p>
+            <p><strong>Included:</strong> {{ "%.2f"|format(data.receipt_data.total_included_tb) }} TB</p>
+            <p><strong>Overage:</strong> {{ "%.2f"|format(data.receipt_data.overage_tb) }} TB</p>
+            <p><strong>Backup Charge:</strong> ${{ "%.2f"|format(data.receipt_data.backup_charge) }}</p>
+
+            {% if data.receipt_data.billed_line_items %}
+            <h3 style="margin-top: 20px;">Custom Line Items</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Type</th>
+                        <th>Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data.receipt_data.billed_line_items %}
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.type }}</td>
+                        <td>${{ "%.2f"|format(item.cost) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2"><strong>Total Line Items</strong></td>
+                        <td><strong>${{ "%.2f"|format(data.receipt_data.total_line_item_charges) }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% endif %}
+
+            <h2 style="margin-top: 20px;">Total Bill: ${{ "%.2f"|format(data.receipt_data.total) }}</h2>
+
+            <div style="margin-top: 20px;">
+                <a href="/ledger/client/{{ account_number }}/settings" class="btn btn--primary">
+                    <span class="btn__label">Billing Settings</span>
+                </a>
+                <a href="/ledger/" class="btn">
+                    <span class="btn__label">Back to Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
