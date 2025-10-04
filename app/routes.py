@@ -683,3 +683,11 @@ def export_all_bills_zip():
             'Content-Disposition': f'attachment;filename=all_invoices_{year}-{month:02d}.zip'
         }
     )
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint for monitoring"""
+    return {
+        'status': 'healthy',
+        'timestamp': datetime.utcnow().isoformat()
+    }
