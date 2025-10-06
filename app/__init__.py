@@ -53,4 +53,17 @@ app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix=f'/{app.config["SERVICE_NAM
 from app.admin_routes import admin_bp
 app.register_blueprint(admin_bp)
 
+# Initialize Helm logger for centralized logging
+app.config["SERVICE_NAME"] = os.environ.get("SERVICE_NAME", "ledger")
+app.config["HELM_SERVICE_URL"] = os.environ.get("HELM_SERVICE_URL", "http://localhost:5004")
+
+from app.helm_logger import init_helm_logger
+helm_logger = init_helm_logger(
+    app.config["SERVICE_NAME"],
+    app.config["HELM_SERVICE_URL"]
+)
+
 from app import routes
+
+# Log service startup
+helm_logger.info(f"{app.config["SERVICE_NAME"]} service started")
