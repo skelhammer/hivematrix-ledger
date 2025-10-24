@@ -188,6 +188,30 @@ def get_company_tickets(account_number, year=None):
         return []
 
 
+def get_billing_plan_from_codex(plan_name, term_length):
+    """
+    Fetch billing plan details from Codex (includes features).
+
+    Args:
+        plan_name: Plan name (e.g., "[PLAN-A]")
+        term_length: Contract term (e.g., "2-Year")
+
+    Returns:
+        dict: Plan details with features or None if not found
+    """
+    try:
+        response = call_service('codex', f'/api/billing-plans?plan_name={plan_name}&term_length={term_length}')
+        if response.status_code == 200:
+            plans = response.json()
+            return plans[0] if plans else None
+        else:
+            current_app.logger.error(f"Failed to fetch billing plan {plan_name} ({term_length}): {response.status_code}")
+            return None
+    except Exception as e:
+        current_app.logger.error(f"Error fetching billing plan from Codex: {e}")
+        return None
+
+
 def get_billing_data_from_codex(account_number):
     """
     Fetch all necessary data from Codex for billing calculations.

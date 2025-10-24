@@ -12,14 +12,59 @@
         <div class="card__body">
             <p><strong>Account Number:</strong> {{ account_number }}</p>
             <p><strong>Billing Period:</strong> {{ year }}-{{ "%02d"|format(month) }}</p>
-            <p><strong>Billing Plan:</strong> {{ data.client.billing_plan }} ({{ data.client.contract_term_length }})</p>
+            <p><strong>Billing Plan:</strong> {{ data.client.billing_plan or 'N/A' }}</p>
+            <p><strong>Contract Term:</strong> {{ data.client.contract_term_length or 'N/A' }}</p>
             <p><strong>Support Level:</strong> {{ data.support_level_display }}</p>
+            {% if data.client.contract_start_date %}
+            <p><strong>Contract Start:</strong> {{ data.client.contract_start_date }}</p>
+            {% endif %}
             <p><strong>Contract End:</strong> {{ data.contract_end_date }}</p>
             {% if data.contract_expired %}
             <p style="color: red;"><strong>⚠️ Contract Expired</strong></p>
             {% endif %}
         </div>
     </div>
+
+    {% if data.plan_features %}
+    <div class="card" style="margin-top: 20px;">
+        <div class="card__header">
+            <h2 class="card__title">Plan Features & Inclusions</h2>
+        </div>
+        <div class="card__body">
+            <p><em>Features included with {{ data.client.billing_plan or 'your plan' }}:</em></p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Included Solution</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for feature, value in data.plan_features.items() %}
+                    {% if value and value != 'Not Included' %}
+                    <tr>
+                        <td><strong>{{ feature.replace('_', ' ').title() }}</strong></td>
+                        <td>{{ value }}</td>
+                        <td>
+                            {% if data.feature_override_status.get(feature, False) %}
+                                <span style="color: orange;">⚠️ Customized</span>
+                            {% else %}
+                                <span style="color: green;">✓ From Plan</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                <strong>⚠️ Customized</strong> = Override configured in Ledger (differs from Codex plan default)<br>
+                <strong>✓ From Plan</strong> = Standard feature from billing plan in Codex
+            </p>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="card" style="margin-top: 20px;">
         <div class="card__header">

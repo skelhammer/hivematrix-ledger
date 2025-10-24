@@ -18,7 +18,7 @@ from app.auth import token_required
 from extensions import db
 from models import (
     ClientBillingOverride, AssetBillingOverride, UserBillingOverride,
-    ManualAsset, ManualUser, CustomLineItem
+    ManualAsset, ManualUser, CustomLineItem, ClientFeatureOverride
 )
 
 api_bp = Blueprint('api', __name__, url_prefix='/api/overrides')
@@ -485,3 +485,90 @@ def delete_custom_line_item(account_number, item_id):
     db.session.commit()
 
     return jsonify({'message': 'Line item deleted'}), 200
+
+
+# ===== FEATURE OVERRIDES =====
+
+@api_bp.route('/features/<account_number>', methods=['GET'])
+@token_required
+def get_feature_overrides(account_number):
+    """Get all feature overrides for a company."""
+    overrides = ClientFeatureOverride.query.filter_by(
+        company_account_number=account_number
+    ).all()
+
+    data = [{
+        'feature_type': o.feature_type,
+        'override_enabled': o.override_enabled,
+        'value': o.value
+    } for o in overrides]
+
+    return jsonify({'feature_overrides': data}), 200
+
+
+@api_bp.route('/features/<account_number>', methods=['PUT', 'POST'])
+@token_required
+def set_feature_overrides(account_number):
+    """Set or update feature overrides for a company.
+
+    Expected JSON format:
+    {
+        "antivirus": "SentinelOne",
+        "soc": "RocketCyber",
+        "password_manager": "Not Included"
+    }
+    """
+    data = request.get_json()
+
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    # Valid feature types
+    valid_features = ['antivirus', 'soc', 'password_manager', 'sat', 'email_security', 'network_management']
+
+    updated = []
+    for feature_type, value in data.items():
+        if feature_type not in valid_features:
+            continue
+
+        # Get or create override
+        override = ClientFeatureOverride.query.filter_by(
+            company_account_number=account_number,
+            feature_type=feature_type
+        ).first()
+
+        if not override:
+            override = ClientFeatureOverride(
+                company_account_number=account_number,
+                feature_type=feature_type
+            )
+            db.session.add(override)
+
+        override.override_enabled = True
+        override.value = value
+        updated.append(feature_type)
+
+    try:
+        db.session.commit()
+        return jsonify({'message': f'Feature overrides updated: {", ".join(updated)}'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/features/<account_number>/<feature_type>', methods=['DELETE'])
+@token_required
+def delete_feature_override(account_number, feature_type):
+    """Remove a specific feature override for a company."""
+    override = ClientFeatureOverride.query.filter_by(
+        company_account_number=account_number,
+        feature_type=feature_type
+    ).first()
+
+    if not override:
+        return jsonify({'message': 'No override to delete'}), 200
+
+    db.session.delete(override)
+    db.session.commit()
+
+    return jsonify({'message': f'Feature override for {feature_type} deleted'}), 200

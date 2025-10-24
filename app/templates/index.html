@@ -98,6 +98,8 @@
         let filteredData = [];
         let sortColumn = 'name';
         let sortDirection = 'asc';
+        let currentPage = 1;
+        let itemsPerPage = 999999; // Show all by default
 
         // Fetch billing dashboard data via API
         function fetchBillingData() {
@@ -173,11 +175,29 @@
                        company.account_number.toString().includes(searchTerm) ||
                        (company.billing_plan && company.billing_plan.toLowerCase().includes(searchTerm));
             });
+            currentPage = 1; // Reset to first page on search
+            renderTable();
+        }
+
+        function changePage(newPage) {
+            currentPage = newPage;
+            renderTable();
+        }
+
+        function changePageSize(newSize) {
+            itemsPerPage = parseInt(newSize);
+            currentPage = 1;
             renderTable();
         }
 
         function renderTable() {
             const tableDiv = document.getElementById('billing-table');
+
+            // Calculate pagination
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+            const pageData = filteredData.slice(startIndex, endIndex);
 
             let html = '<table><thead><tr>';
             html += '<th class="sortable-header" onclick="sortData(\'name\')">Company <span class="sort-indicator">' + (sortColumn === 'name' ? (sortDirection === 'asc' ? '▲' : '▼') : '') + '</span></th>';
@@ -196,7 +216,7 @@
             html += '<th>Actions</th>';
             html += '</tr></thead><tbody>';
 
-            filteredData.forEach(company => {
+            pageData.forEach(company => {
                 html += '<tr>';
                 html += `<td>${company.name}</td>`;
                 html += `<td>${company.account_number}</td>`;
@@ -221,7 +241,29 @@
             });
 
             html += '</tbody></table>';
-            html += `<p style="margin-top: 10px;">Showing ${filteredData.length} of ${billingData.length} clients</p>`;
+
+            // Pagination controls
+            html += '<div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">';
+            html += '<div>';
+            html += `<label>Show: <select onchange="changePageSize(this.value)" style="padding: 5px;">`;
+            html += `<option value="25" ${itemsPerPage === 25 ? 'selected' : ''}>25</option>`;
+            html += `<option value="50" ${itemsPerPage === 50 ? 'selected' : ''}>50</option>`;
+            html += `<option value="100" ${itemsPerPage === 100 ? 'selected' : ''}>100</option>`;
+            html += `<option value="999999" ${itemsPerPage >= 999999 ? 'selected' : ''}>All (${billingData.length})</option>`;
+            html += '</select> per page</label>';
+            html += `<span style="margin-left: 20px;">Showing ${startIndex + 1}-${endIndex} of ${filteredData.length} clients</span>`;
+            html += '</div>';
+            html += '<div>';
+
+            if (totalPages > 1) {
+                html += '<button onclick="changePage(1)" ' + (currentPage === 1 ? 'disabled' : '') + ' class="btn">First</button> ';
+                html += '<button onclick="changePage(' + (currentPage - 1) + ')" ' + (currentPage === 1 ? 'disabled' : '') + ' class="btn">Previous</button> ';
+                html += `<span style="margin: 0 10px;">Page ${currentPage} of ${totalPages}</span> `;
+                html += '<button onclick="changePage(' + (currentPage + 1) + ')" ' + (currentPage === totalPages ? 'disabled' : '') + ' class="btn">Next</button> ';
+                html += '<button onclick="changePage(' + totalPages + ')" ' + (currentPage === totalPages ? 'disabled' : '') + ' class="btn">Last</button>';
+            }
+
+            html += '</div></div>';
             tableDiv.innerHTML = html;
         }
 
