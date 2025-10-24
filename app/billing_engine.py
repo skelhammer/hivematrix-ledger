@@ -150,7 +150,7 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
     # Check for feature overrides from Ledger database
     feature_overrides = ClientFeatureOverride.query.filter_by(
         company_account_number=account_number
-    ).first()
+    ).all()
 
     # Build effective features (plan defaults + overrides)
     effective_features = {
@@ -163,19 +163,9 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
     }
 
     # Apply Ledger-specific feature overrides
-    if feature_overrides:
-        if feature_overrides.override_antivirus_enabled and feature_overrides.antivirus:
-            effective_features['antivirus'] = feature_overrides.antivirus
-        if feature_overrides.override_soc_enabled and feature_overrides.soc:
-            effective_features['soc'] = feature_overrides.soc
-        if feature_overrides.override_password_manager_enabled and feature_overrides.password_manager:
-            effective_features['password_manager'] = feature_overrides.password_manager
-        if feature_overrides.override_sat_enabled and feature_overrides.sat:
-            effective_features['sat'] = feature_overrides.sat
-        if feature_overrides.override_email_security_enabled and feature_overrides.email_security:
-            effective_features['email_security'] = feature_overrides.email_security
-        if feature_overrides.override_network_management_enabled and feature_overrides.network_management:
-            effective_features['network_management'] = feature_overrides.network_management
+    for override in feature_overrides:
+        if override.override_enabled and override.value:
+            effective_features[override.feature_type] = override.value
 
     # --- Calculate Itemized Asset Charges ---
     billed_assets = []
