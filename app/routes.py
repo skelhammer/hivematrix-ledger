@@ -507,16 +507,27 @@ def api_billing_dashboard():
     API endpoint to get billing dashboard data for all companies.
     Uses bulk endpoint to minimize API calls.
     """
-    year = request.args.get('year', datetime.now().year, type=int)
-    month = request.args.get('month', datetime.now().month, type=int)
+    try:
+        year = request.args.get('year', datetime.now().year, type=int)
+        month = request.args.get('month', datetime.now().month, type=int)
 
-    # Fetch all billing plans from Codex in one bulk call
-    from app.codex_client import get_all_billing_plans_bulk
-    plan_features_cache = get_all_billing_plans_bulk()
+        # Fetch all billing plans from Codex in one bulk call
+        from app.codex_client import get_all_billing_plans_bulk
+        plan_features_cache = get_all_billing_plans_bulk()
 
-    # Try bulk endpoint first (1 API call instead of 5N+1)
-    # Include tickets for current year to avoid separate queries
-    companies_bulk = get_all_companies_with_details(include_tickets=True, year=datetime.now().year)
+        # Try bulk endpoint first (1 API call instead of 5N+1)
+        # Include tickets for current year to avoid separate queries
+        companies_bulk = get_all_companies_with_details(include_tickets=True, year=datetime.now().year)
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Dashboard API error: {e}\n{error_details}")
+        return jsonify({
+            'error': f'Dashboard API error: {str(e)}',
+            'details': error_details,
+            'billing_period': f'{datetime.now().year}-{datetime.now().month:02d}',
+            'companies': []
+        }), 500
 
     # If bulk endpoint not available, fall back to individual calls
     if companies_bulk is None:
