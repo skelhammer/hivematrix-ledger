@@ -48,6 +48,10 @@ def client_details(account_number):
     year = request.args.get('year', today.year, type=int)
     month = request.args.get('month', today.month, type=int)
 
+    # Fetch billing plan features from Codex
+    from app.codex_client import get_all_billing_plans_bulk
+    plan_features_cache = get_all_billing_plans_bulk()
+
     # Calculate billing
     billing_data = get_billing_data_for_client(
         codex_data['company'],
@@ -55,7 +59,8 @@ def client_details(account_number):
         codex_data['users'],
         year,
         month,
-        codex_data.get('tickets', [])
+        codex_data.get('tickets', []),
+        plan_features_cache=plan_features_cache
     )
 
     if not billing_data:
@@ -505,6 +510,10 @@ def api_billing_dashboard():
     year = request.args.get('year', datetime.now().year, type=int)
     month = request.args.get('month', datetime.now().month, type=int)
 
+    # Fetch all billing plans from Codex in one bulk call
+    from app.codex_client import get_all_billing_plans_bulk
+    plan_features_cache = get_all_billing_plans_bulk()
+
     # Try bulk endpoint first (1 API call instead of 5N+1)
     # Include tickets for current year to avoid separate queries
     companies_bulk = get_all_companies_with_details(include_tickets=True, year=datetime.now().year)
@@ -540,7 +549,8 @@ def api_billing_dashboard():
                 codex_data['users'],
                 year,
                 month,
-                tickets_data=tickets
+                tickets_data=tickets,
+                plan_features_cache=plan_features_cache
             )
 
             if not billing_data:
@@ -592,7 +602,8 @@ def api_billing_dashboard():
             item.get('contacts', []),
             year,
             month,
-            tickets_data=tickets
+            tickets_data=tickets,
+            plan_features_cache=plan_features_cache
         )
 
         if not billing_data:

@@ -8,7 +8,7 @@ from models import (
 )
 
 
-def get_billing_data_for_client(company_data, assets_data, users_data, year, month, tickets_data=None):
+def get_billing_data_for_client(company_data, assets_data, users_data, year, month, tickets_data=None, plan_features_cache=None):
     """
     A comprehensive function to calculate billing details for a specific client and period.
     This is the core logic that powers both the dashboard and the breakdown view.
@@ -20,6 +20,7 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
         year: Billing year
         month: Billing month (1-12)
         tickets_data: List of ticket dicts from Codex (optional, will fetch from Codex if None)
+        plan_features_cache: Dict of plan features from bulk API (optional, for performance)
 
     Returns:
         Dict with billing breakdown and all related data
@@ -139,6 +140,42 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
                 contract_end_date = "Month to Month"
         except (ValueError, TypeError):
             contract_end_date = "Invalid Start Date"
+
+    # --- Fetch Plan Features from Cache ---
+    plan_features = {}
+    if plan_features_cache and billing_plan_name and contract_term:
+        cache_key = f"{billing_plan_name}|{contract_term}"
+        plan_features = plan_features_cache.get(cache_key, {})
+
+    # Check for feature overrides from Ledger database
+    feature_overrides = ClientFeatureOverride.query.filter_by(
+        company_account_number=account_number
+    ).first()
+
+    # Build effective features (plan defaults + overrides)
+    effective_features = {
+        'antivirus': plan_features.get('antivirus', 'Not Included'),
+        'soc': plan_features.get('soc', 'Not Included'),
+        'password_manager': plan_features.get('password_manager', 'Not Included'),
+        'sat': plan_features.get('sat', 'Not Included'),
+        'email_security': plan_features.get('email_security', 'Not Included'),
+        'network_management': plan_features.get('network_management', 'Not Included'),
+    }
+
+    # Apply Ledger-specific feature overrides
+    if feature_overrides:
+        if feature_overrides.override_antivirus_enabled and feature_overrides.antivirus:
+            effective_features['antivirus'] = feature_overrides.antivirus
+        if feature_overrides.override_soc_enabled and feature_overrides.soc:
+            effective_features['soc'] = feature_overrides.soc
+        if feature_overrides.override_password_manager_enabled and feature_overrides.password_manager:
+            effective_features['password_manager'] = feature_overrides.password_manager
+        if feature_overrides.override_sat_enabled and feature_overrides.sat:
+            effective_features['sat'] = feature_overrides.sat
+        if feature_overrides.override_email_security_enabled and feature_overrides.email_security:
+            effective_features['email_security'] = feature_overrides.email_security
+        if feature_overrides.override_network_management_enabled and feature_overrides.network_management:
+            effective_features['network_management'] = feature_overrides.network_management
 
     # --- Calculate Itemized Asset Charges ---
     billed_assets = []
@@ -352,6 +389,7 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
         ],
         'receipt_data': receipt,
         'effective_rates': effective_rates,
+        'effective_features': effective_features,
         'quantities': dict(quantities),
         'backup_info': backup_info,
         'total_backup_tb': total_backup_tb,

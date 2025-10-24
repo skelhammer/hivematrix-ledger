@@ -212,6 +212,34 @@ def get_billing_plan_from_codex(plan_name, term_length):
         return None
 
 
+def get_all_billing_plans_bulk():
+    """
+    Fetch all unique billing plans with their features in one bulk call.
+    This is optimized for dashboard loading - fetches all plan+term combinations at once.
+
+    Returns:
+        dict: Dictionary keyed by "plan_name|term_length" containing plan details and features
+              Example: {"[PLAN-A]|2-Year": {"plan_name": "[PLAN-A]", "term_length": "2-Year", ...}}
+              Returns empty dict on error
+    """
+    try:
+        response = call_service('codex', '/billing-plans/api/bulk-plans')
+        if response.status_code == 200:
+            return response.json().get('plans', {})
+        elif response.status_code == 404:
+            current_app.logger.warning("Codex /billing-plans/api/bulk-plans endpoint not found. Is Codex updated?")
+            return {}
+        else:
+            current_app.logger.error(f"Failed to fetch bulk billing plans from Codex: HTTP {response.status_code}")
+            return {}
+    except ConnectionError as e:
+        current_app.logger.warning(f"Cannot connect to Codex service for bulk plans: {e}")
+        return {}
+    except Exception as e:
+        current_app.logger.error(f"Error fetching bulk billing plans from Codex: {e}")
+        return {}
+
+
 def get_billing_data_from_codex(account_number):
     """
     Fetch all necessary data from Codex for billing calculations.
