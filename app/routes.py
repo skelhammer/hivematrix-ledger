@@ -6,7 +6,7 @@ from app.billing_engine import get_billing_data_for_client
 from app.invoice_generator import generate_invoice_csv, generate_bulk_invoices_zip, get_invoice_summary
 from app.archive_client import send_to_archive, check_if_archived
 from datetime import datetime, timedelta
-from models import BillingPlan, ClientBillingOverride, ManualAsset, ManualUser, CustomLineItem, AssetBillingOverride, UserBillingOverride, TicketDetail
+from models import BillingPlan, ClientBillingOverride, ManualAsset, ManualUser, CustomLineItem, AssetBillingOverride, UserBillingOverride, TicketDetail, ClientFeatureOverride
 from extensions import db
 import io
 import csv
