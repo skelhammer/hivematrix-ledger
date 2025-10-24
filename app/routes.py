@@ -519,6 +519,10 @@ def api_billing(account_number):
     if not codex_data:
         return {'error': f'Company {account_number} not found'}, 404
 
+    # Fetch plan features from Codex bulk API
+    from app.codex_client import get_all_billing_plans_bulk
+    plan_features_cache = get_all_billing_plans_bulk()
+
     # Calculate billing
     billing_data = get_billing_data_for_client(
         codex_data['company'],
@@ -526,7 +530,8 @@ def api_billing(account_number):
         codex_data['users'],
         year,
         month,
-        codex_data.get('tickets', [])
+        codex_data.get('tickets', []),
+        plan_features_cache
     )
 
     if not billing_data:
@@ -539,7 +544,9 @@ def api_billing(account_number):
         'billing_period': f'{year}-{month:02d}',
         'receipt': billing_data['receipt_data'],
         'quantities': billing_data['quantities'],
-        'effective_rates': billing_data['effective_rates']
+        'effective_rates': billing_data['effective_rates'],
+        'plan_features': billing_data.get('plan_features', {}),
+        'feature_override_status': billing_data.get('feature_override_status', {})
     })
 
 
