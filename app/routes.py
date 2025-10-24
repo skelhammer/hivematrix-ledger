@@ -1,8 +1,10 @@
-from flask import render_template, g, jsonify, request, redirect, url_for, flash, Response
+from flask import render_template, g, jsonify, request, redirect, url_for, flash, Response, send_file
 from app import app
 from app.auth import token_required, billing_required, admin_required
 from app.codex_client import get_all_companies, get_all_companies_with_details, get_billing_data_from_codex
 from app.billing_engine import get_billing_data_for_client
+from app.invoice_generator import generate_invoice_csv, generate_bulk_invoices_zip, get_invoice_summary
+from app.archive_client import send_to_archive, check_if_archived
 from datetime import datetime, timedelta
 from models import BillingPlan, ClientBillingOverride, ManualAsset, ManualUser, CustomLineItem, AssetBillingOverride, UserBillingOverride, TicketDetail
 from extensions import db
@@ -294,6 +296,160 @@ def client_settings(account_number):
         asset_overrides=asset_overrides,
         user_overrides=user_overrides
     )
+
+
+# ===== INVOICE GENERATION ROUTES =====
+
+@app.route('/invoice/<account_number>/download')
+@billing_required
+def download_invoice(account_number):
+    """Download CSV invoice for a specific company and billing period."""
+    if g.is_service_call:
+        return {'error': 'This endpoint is for users only'}, 403
+
+    # Get year/month from query params (default to current month)
+    today = datetime.now()
+    year = request.args.get('year', today.year, type=int)
+    month = request.args.get('month', today.month, type=int)
+
+    # Generate invoice CSV
+    csv_content, company_name, invoice_number = generate_invoice_csv(account_number, year, month)
+
+    if not csv_content:
+        flash(f'Unable to generate invoice for company {account_number}', 'error')
+        return redirect(url_for('index'))
+
+    # Sanitize company name for filename
+    safe_name = "".join(
+        c for c in company_name if c.isalnum() or c in (' ', '_', '-')
+    ).strip().replace(' ', '_')
+
+    filename = f"{safe_name}_{year}-{month:02d}.csv"
+
+    # Return as downloadable file
+    return Response(
+        csv_content,
+        mimetype='text/csv',
+        headers={
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+    )
+
+
+@app.route('/invoices/bulk/download')
+@billing_required
+def download_bulk_invoices():
+    """Download ZIP file containing invoices for ALL companies for a specific period."""
+    if g.is_service_call:
+        return {'error': 'This endpoint is for users only'}, 403
+
+    # Get year/month from query params (default to current month)
+    today = datetime.now()
+    year = request.args.get('year', today.year, type=int)
+    month = request.args.get('month', today.month, type=int)
+
+    # Generate bulk invoices ZIP
+    zip_bytes, zip_filename = generate_bulk_invoices_zip(year, month)
+
+    if not zip_bytes:
+        flash('Unable to generate invoices. No companies found or billing data unavailable.', 'error')
+        return redirect(url_for('index'))
+
+    # Return ZIP file
+    return send_file(
+        io.BytesIO(zip_bytes),
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=zip_filename
+    )
+
+
+@app.route('/api/invoice/<account_number>/summary')
+@billing_required
+def api_invoice_summary(account_number):
+    """API endpoint to get invoice summary without generating full CSV."""
+    year = request.args.get('year', datetime.now().year, type=int)
+    month = request.args.get('month', datetime.now().month, type=int)
+
+    summary = get_invoice_summary(account_number, year, month)
+
+    if not summary:
+        return jsonify({'error': 'Unable to generate invoice summary'}), 404
+
+    # Check if already archived
+    summary['is_archived'] = check_if_archived(summary['invoice_number'])
+
+    return jsonify(summary)
+
+
+# ===== ARCHIVE INTEGRATION =====
+
+@app.route('/api/bill/accept', methods=['POST'])
+@billing_required
+def accept_bill():
+    """
+    Accept/finalize a bill and send it to Archive for permanent storage.
+
+    Payload:
+    {
+        "account_number": "620547",
+        "year": 2025,
+        "month": 10,
+        "notes": "Optional notes"  // Optional
+    }
+    """
+    if g.is_service_call:
+        return {'error': 'This endpoint is for users only'}, 403
+
+    data = request.get_json()
+
+    if not data or 'account_number' not in data or 'year' not in data or 'month' not in data:
+        return jsonify({'error': 'account_number, year, and month are required'}), 400
+
+    account_number = data['account_number']
+    year = data['year']
+    month = data['month']
+    notes = data.get('notes')
+
+    # Send to archive
+    success, message, invoice_number = send_to_archive(
+        account_number,
+        year,
+        month,
+        user_email=g.user.get('email'),
+        notes=notes
+    )
+
+    if success:
+        return jsonify({
+            'success': True,
+            'message': message,
+            'invoice_number': invoice_number
+        }), 201
+    else:
+        status_code = 409 if 'already been archived' in message else 500
+        return jsonify({
+            'success': False,
+            'error': message
+        }), status_code
+
+
+@app.route('/api/bill/check-archived/<account_number>')
+@billing_required
+def check_bill_archived(account_number):
+    """Check if a bill for a specific period has been archived."""
+    year = request.args.get('year', datetime.now().year, type=int)
+    month = request.args.get('month', datetime.now().month, type=int)
+
+    from app.invoice_generator import generate_invoice_number
+    invoice_number = generate_invoice_number(account_number, year, month)
+
+    is_archived = check_if_archived(invoice_number)
+
+    return jsonify({
+        'invoice_number': invoice_number,
+        'is_archived': is_archived
+    }), 200
 
 
 

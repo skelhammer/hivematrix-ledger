@@ -121,6 +121,12 @@
             <h2 style="margin-top: 20px;">Total Bill: ${{ "%.2f"|format(data.receipt_data.total) }}</h2>
 
             <div style="margin-top: 20px;">
+                <button id="acceptBillBtn" class="btn btn--primary" style="margin-right: 10px;">
+                    <span class="btn__label">Accept Bill & Archive</span>
+                </button>
+                <a href="/invoice/{{ account_number }}/download?year={{ year }}&month={{ month }}" class="btn btn--primary" style="margin-right: 10px;">
+                    <span class="btn__label">Download CSV Invoice</span>
+                </a>
                 <a href="/ledger/client/{{ account_number }}/export/quickbooks?year={{ year }}&month={{ month }}" class="btn btn--primary">
                     <span class="btn__label">Export to QuickBooks (CSV)</span>
                 </a>
@@ -131,6 +137,88 @@
                     <span class="btn__label">Back to Dashboard</span>
                 </a>
             </div>
+
+            <div id="archiveStatus" style="margin-top: 10px; padding: 10px; display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+    // Check if bill is already archived
+    fetch('/api/bill/check-archived/{{ account_number }}?year={{ year }}&month={{ month }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.is_archived) {
+                const btn = document.getElementById('acceptBillBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="btn__label">✓ Already Archived</span>';
+                btn.style.backgroundColor = '#28a745';
+
+                const status = document.getElementById('archiveStatus');
+                status.style.display = 'block';
+                status.style.backgroundColor = '#d4edda';
+                status.style.color = '#155724';
+                status.innerHTML = `✓ This bill has been accepted and archived as invoice ${data.invoice_number}`;
+            }
+        })
+        .catch(err => console.error('Error checking archive status:', err));
+
+    // Accept bill handler
+    document.getElementById('acceptBillBtn').addEventListener('click', function() {
+        const notes = prompt('Optional notes about this bill (or leave blank):');
+        if (notes === null) return; // User cancelled
+
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="btn__label">Processing...</span>';
+
+        fetch('/api/bill/accept', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                account_number: '{{ account_number }}',
+                year: {{ year }},
+                month: {{ month }},
+                notes: notes || null
+            })
+        })
+        .then(response => response.json().then(data => ({status: response.status, body: data})))
+        .then(({status, body}) => {
+            const statusDiv = document.getElementById('archiveStatus');
+            statusDiv.style.display = 'block';
+
+            if (status === 201) {
+                statusDiv.style.backgroundColor = '#d4edda';
+                statusDiv.style.color = '#155724';
+                statusDiv.innerHTML = `✓ Bill accepted and archived successfully! Invoice: ${body.invoice_number}`;
+                btn.innerHTML = '<span class="btn__label">✓ Already Archived</span>';
+                btn.style.backgroundColor = '#28a745';
+            } else if (status === 409) {
+                statusDiv.style.backgroundColor = '#fff3cd';
+                statusDiv.style.color = '#856404';
+                statusDiv.innerHTML = `⚠️ ${body.error}`;
+                btn.innerHTML = '<span class="btn__label">✓ Already Archived</span>';
+                btn.style.backgroundColor = '#28a745';
+            } else {
+                statusDiv.style.backgroundColor = '#f8d7da';
+                statusDiv.style.color = '#721c24';
+                statusDiv.innerHTML = `✗ Error: ${body.error}`;
+                btn.disabled = false;
+                btn.innerHTML = '<span class="btn__label">Accept Bill & Archive</span>';
+            }
+        })
+        .catch(err => {
+            const statusDiv = document.getElementById('archiveStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.style.backgroundColor = '#f8d7da';
+            statusDiv.style.color = '#721c24';
+            statusDiv.innerHTML = `✗ Error: ${err.message}`;
+            btn.disabled = false;
+            btn.innerHTML = '<span class="btn__label">Accept Bill & Archive</span>';
+        });
+    });
+    </script>
         </div>
     </div>
 </body>

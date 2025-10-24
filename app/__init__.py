@@ -49,7 +49,9 @@ app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix=f'/{app.config["SERVICE_NAM
 
 # Register blueprints
 from app.admin_routes import admin_bp
+from app.api_routes import api_bp
 app.register_blueprint(admin_bp)
+app.register_blueprint(api_bp)
 
 # Initialize Helm logger for centralized logging
 app.config["SERVICE_NAME"] = os.environ.get("SERVICE_NAME", "ledger")
