@@ -109,6 +109,55 @@
             </div>
         </div>
 
+        <!-- Plan Feature Overrides -->
+        <div class="card" style="margin-top: 20px;">
+            <div class="card__header">
+                <h2 class="card__title">Plan Feature Overrides</h2>
+            </div>
+            <div class="card__body">
+                <p style="margin-bottom: 15px; color: #666;">
+                    Override specific features from the billing plan configured in Codex. Only enabled overrides will be applied.
+                </p>
+                <table class="table--overrides">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Default (From Codex Plan)</th>
+                            <th>Override Value</th>
+                            <th>Enable Override</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for feature_key, feature_label in [
+                            ('antivirus', 'Antivirus'),
+                            ('soc', 'SOC (Security Operations Center)'),
+                            ('password_manager', 'Password Manager'),
+                            ('sat', 'Security Awareness Training'),
+                            ('email_security', 'Email Security'),
+                            ('network_management', 'Network Management')
+                        ] %}
+                        <tr>
+                            <td><strong>{{ feature_label }}</strong></td>
+                            <td>{{ plan_defaults.get(feature_key, 'Not Included') }}</td>
+                            <td>
+                                <input type="text"
+                                       name="feature_{{ feature_key }}"
+                                       class="input"
+                                       placeholder="e.g., Webroot, Mimecast, etc."
+                                       value="{{ feature_overrides.get(feature_key, {}).get('value', '') }}">
+                            </td>
+                            <td>
+                                <input type="checkbox"
+                                       name="feature_{{ feature_key }}_enabled"
+                                       {% if feature_overrides.get(feature_key, {}).get('enabled', False) %}checked{% endif %}>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Asset Billing Overrides -->
         <div class="card" style="margin-top: 20px;">
             <div class="card__header">

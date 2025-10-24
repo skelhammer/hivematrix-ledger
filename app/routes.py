@@ -258,6 +258,32 @@ def client_settings(account_number):
                     if override:
                         db.session.delete(override)
 
+            # Save feature overrides
+            feature_types = ['antivirus', 'soc', 'password_manager', 'sat', 'email_security', 'network_management']
+            for feature_type in feature_types:
+                enabled = f'feature_{feature_type}_enabled' in request.form
+                value = request.form.get(f'feature_{feature_type}', '').strip()
+
+                # Find existing override
+                override = ClientFeatureOverride.query.filter_by(
+                    company_account_number=account_number,
+                    feature_type=feature_type
+                ).first()
+
+                if enabled and value:
+                    # Create or update override
+                    if not override:
+                        override = ClientFeatureOverride(
+                            company_account_number=account_number,
+                            feature_type=feature_type
+                        )
+                        db.session.add(override)
+                    override.override_enabled = True
+                    override.value = value
+                elif override:
+                    # Remove override if disabled or empty
+                    db.session.delete(override)
+
             db.session.commit()
             flash('Settings saved successfully', 'success')
             return redirect(url_for('client_settings', account_number=account_number))
@@ -287,6 +313,21 @@ def client_settings(account_number):
     asset_overrides = {o.asset_id: o for o in AssetBillingOverride.query.all()}
     user_overrides = {o.user_id: o for o in UserBillingOverride.query.all()}
 
+    # Get plan features from Codex
+    from app.codex_client import get_all_billing_plans_bulk
+    plan_features_cache = get_all_billing_plans_bulk()
+    cache_key = f"{billing_plan_name}|{contract_term}"
+    plan_defaults = plan_features_cache.get(cache_key, {})
+
+    # Get feature overrides from Ledger
+    feature_overrides_list = ClientFeatureOverride.query.filter_by(
+        company_account_number=account_number
+    ).all()
+    feature_overrides = {
+        o.feature_type: {'enabled': o.override_enabled, 'value': o.value}
+        for o in feature_overrides_list
+    }
+
     return render_template('client_settings.html',
         user=g.user,
         company=codex_data['company'],
@@ -299,7 +340,9 @@ def client_settings(account_number):
         billing_plans=billing_plans,
         defaults=defaults,
         asset_overrides=asset_overrides,
-        user_overrides=user_overrides
+        user_overrides=user_overrides,
+        plan_defaults=plan_defaults,
+        feature_overrides=feature_overrides
     )
 
 
