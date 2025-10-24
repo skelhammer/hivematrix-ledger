@@ -162,10 +162,12 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
         'network_management': plan_features.get('network_management', 'Not Included'),
     }
 
-    # Apply Ledger-specific feature overrides
+    # Apply Ledger-specific feature overrides and track which features are overridden
+    feature_override_status = {}
     for override in feature_overrides:
         if override.override_enabled and override.value:
             effective_features[override.feature_type] = override.value
+            feature_override_status[override.feature_type] = True
 
     # --- Calculate Itemized Asset Charges ---
     billed_assets = []
@@ -380,6 +382,8 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
         'receipt_data': receipt,
         'effective_rates': effective_rates,
         'effective_features': effective_features,
+        'plan_features': effective_features,  # Alias for template compatibility
+        'feature_override_status': feature_override_status,
         'quantities': dict(quantities),
         'backup_info': backup_info,
         'total_backup_tb': total_backup_tb,
