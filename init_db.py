@@ -251,6 +251,10 @@ def init_db_headless(db_host, db_port, db_name, db_user, db_password, migrate_on
 
     # Initialize database schema
     print("\n→ Initializing database schema...")
+    
+    # Update app config with the new connection string (important!)
+    app.config['SQLALCHEMY_DATABASE_URI'] = conn_string
+    
     with app.app_context():
         db.create_all()
         print("✓ Database schema initialized successfully!")
