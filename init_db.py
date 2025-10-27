@@ -10,13 +10,26 @@ from dotenv import load_dotenv
 load_dotenv('.flaskenv')
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app import app
-from extensions import db
-from models import (
-    BillingPlan, ClientBillingOverride, AssetBillingOverride, UserBillingOverride,
-    ManualAsset, ManualUser, CustomLineItem, TicketDetail, FeatureOption, ClientFeatureOverride,
-    SchedulerJob
-)
+# NOTE: We import app later in functions to allow config file to be created first
+# For headless mode, app is imported AFTER config file is written
+app = None
+db = None
+
+def _import_app():
+    """Import app and db after config file exists."""
+    global app, db
+    if app is None:
+        from app import app as flask_app
+        from extensions import db as database
+        # Import ALL models so SQLAlchemy knows about them
+        from models import (
+            BillingPlan, ClientBillingOverride, AssetBillingOverride, UserBillingOverride,
+            ManualAsset, ManualUser, CustomLineItem, TicketDetail, FeatureOption, ClientFeatureOverride,
+            SchedulerJob
+        )
+        app = flask_app
+        db = database
+    return app, db
 
 
 def get_db_credentials(config):
@@ -61,6 +74,8 @@ def test_db_connection(creds):
 
 def create_sample_billing_plans():
     """Creates comprehensive billing plans from billing_config.json."""
+    app, db = _import_app()
+    from models import BillingPlan
     print("\n--- Creating Billing Plans ---")
 
     # Load config from billing_config.json
@@ -115,6 +130,8 @@ def create_sample_billing_plans():
 
 def create_feature_options():
     """Creates feature options from billing_config.json."""
+    app, db = _import_app()
+    from models import FeatureOption
     print("\n--- Creating Feature Options ---")
 
     # Load config from billing_config.json
@@ -154,6 +171,8 @@ def create_feature_options():
 
 def create_sample_scheduler_jobs():
     """Creates sample scheduler jobs for initial setup."""
+    app, db = _import_app()
+    from models import SchedulerJob
     print("\n--- Creating Scheduler Jobs ---")
 
     sample_jobs = [
@@ -194,7 +213,9 @@ def init_db_headless(db_host, db_port, db_name, db_user, db_password, migrate_on
     print("LEDGER DATABASE INITIALIZATION (HEADLESS MODE)")
     print("="*80)
 
-    instance_path = app.instance_path
+    # Determine instance path without importing app yet
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    instance_path = os.path.join(script_dir, 'instance')
     os.makedirs(instance_path, exist_ok=True)
     config_path = os.path.join(instance_path, 'ledger.conf')
 
@@ -232,10 +253,10 @@ def init_db_headless(db_host, db_port, db_name, db_user, db_password, migrate_on
 
     # Initialize database schema
     print("\n→ Initializing database schema...")
-    
-    # Update app config with the new connection string (important!)
-    app.config['SQLALCHEMY_DATABASE_URI'] = conn_string
-    
+
+    # Import app AFTER config is written so it loads with correct database
+    app, db = _import_app()
+
     with app.app_context():
         db.create_all()
         print("✓ Database schema initialized successfully!")
@@ -255,6 +276,7 @@ def init_db_headless(db_host, db_port, db_name, db_user, db_password, migrate_on
 
 def init_db():
     """Interactively configures and initializes the database."""
+    app, db = _import_app()
     instance_path = app.instance_path
     config_path = os.path.join(instance_path, 'ledger.conf')
 
