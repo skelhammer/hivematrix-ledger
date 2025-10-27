@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 import configparser
+import json
 from getpass import getpass
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
@@ -59,68 +60,53 @@ def test_db_connection(creds):
 
 
 def create_sample_billing_plans():
-    """Creates comprehensive billing plans matching production setup."""
+    """Creates comprehensive billing plans from billing_config.json."""
     print("\n--- Creating Billing Plans ---")
 
-    # Plan names from your config
-    plan_names = ['[PLAN-D]', '[PLAN-C]', '[PLAN-B]', '[PLAN-A]',
-                  '[PLAN-E]', 'MSP Hybrid', '[PLAN-F]', '[PLAN-G]', 'Break Fix']
-
-    term_lengths = ['Month to Month', '1-Year', '2-Year', '3-Year']
-
-    # Base pricing structure (can be customized per plan)
-    base_pricing = {
-        'per_user_cost': 15.00,
-        'per_workstation_cost': 50.00,
-        'per_server_cost': 150.00,
-        'per_vm_cost': 100.00,
-        'per_switch_cost': 25.00,
-        'per_firewall_cost': 75.00,
-        'per_hour_ticket_cost': 150.00,
-        'backup_base_fee_workstation': 5.00,
-        'backup_base_fee_server': 20.00,
-        'backup_included_tb': 1.0,
-        'backup_per_tb_fee': 10.00
-    }
-
-    # Support level mapping
-    support_levels = {
-        '[PLAN-D]': 'Hourly',
-        '[PLAN-C]': 'Hourly',
-        '[PLAN-B]': 'Unlimited',
-        '[PLAN-A]': 'Unlimited',
-        '[PLAN-E]': 'Unlimited',
-        'MSP Hybrid': 'Unlimited',
-        '[PLAN-F]': 'Hourly',
-        '[PLAN-G]': 'Hourly',
-        'Break Fix': 'Hourly'
-    }
+    # Load config from billing_config.json
+    config_path = os.path.join(os.path.dirname(__file__), 'billing_config.json')
+    with open(config_path, 'r') as f:
+        config = json.load(f)
 
     created_count = 0
     existing_count = 0
 
-    for plan_name in plan_names:
-        support_level = support_levels.get(plan_name, 'Hourly')
+    # Plans data format: [plan_name, term_length, per_user, per_workstation, per_server, per_vm,
+    #                     per_switch, per_firewall, per_hour, backup_base_ws, backup_base_svr,
+    #                     backup_included_tb, backup_per_tb, support_level,
+    #                     antivirus, soc, password_mgr, sat, email_security, network_mgmt]
+    for plan_data in config['default_plans_data']:
+        plan_name = plan_data[0]
+        term_length = plan_data[1]
 
-        for term_length in term_lengths:
-            # Check if exists
-            existing = BillingPlan.query.filter_by(
+        # Check if exists
+        existing = BillingPlan.query.filter_by(
+            billing_plan=plan_name,
+            term_length=term_length
+        ).first()
+
+        if not existing:
+            # Create new plan
+            plan = BillingPlan(
                 billing_plan=plan_name,
-                term_length=term_length
-            ).first()
-
-            if not existing:
-                # Create new plan
-                plan = BillingPlan(
-                    billing_plan=plan_name,
-                    term_length=term_length,
-                    support_level=support_level,
-                    **base_pricing
-                )
-                db.session.add(plan)
-                created_count += 1
-            else:
-                existing_count += 1
+                term_length=term_length,
+                per_user_cost=plan_data[2],
+                per_workstation_cost=plan_data[3],
+                per_server_cost=plan_data[4],
+                per_vm_cost=plan_data[5],
+                per_switch_cost=plan_data[6],
+                per_firewall_cost=plan_data[7],
+                per_hour_ticket_cost=plan_data[8],
+                backup_base_fee_workstation=plan_data[9],
+                backup_base_fee_server=plan_data[10],
+                backup_included_tb=plan_data[11],
+                backup_per_tb_fee=plan_data[12],
+                support_level=plan_data[13]
+            )
+            db.session.add(plan)
+            created_count += 1
+        else:
+            existing_count += 1
 
     db.session.commit()
     print(f"  ✓ Created {created_count} plans, {existing_count} already existed")
@@ -128,19 +114,13 @@ def create_sample_billing_plans():
 
 
 def create_feature_options():
-    """Creates feature options matching production setup."""
+    """Creates feature options from billing_config.json."""
     print("\n--- Creating Feature Options ---")
 
-    # Features from your config
-    features = {
-        'antivirus': ['Datto EDR', 'SentinelOne', 'Not Included'],
-        'email_security': ['ProofPoint', 'Not Included'],
-        'network_management': ['Auvik', 'Not Included'],
-        'password_manager': ['Keeper', 'Not Included'],
-        'sat': ['BSN', 'Not Included'],
-        'soc': ['RocketCyber', 'Not Included'],
-        'support_level': ['Unlimited', 'Hourly']
-    }
+    # Load config from billing_config.json
+    config_path = os.path.join(os.path.dirname(__file__), 'billing_config.json')
+    with open(config_path, 'r') as f:
+        config = json.load(f)
 
     created_count = 0
     existing_count = 0
@@ -151,20 +131,21 @@ def create_feature_options():
         key = (feature.feature_type, feature.display_name)
         existing_features[key] = feature
 
-    for feature_type, options in features.items():
-        for option in options:
-            key = (feature_type, option)
+    for feature_data in config['default_features']:
+        feature_type = feature_data[0]
+        option = feature_data[1]
+        key = (feature_type, option)
 
-            if key not in existing_features:
-                feature = FeatureOption(
-                    feature_type=feature_type,
-                    display_name=option,
-                    description=f"{option} option for {feature_type.replace('_', ' ').title()}"
-                )
-                db.session.add(feature)
-                created_count += 1
-            else:
-                existing_count += 1
+        if key not in existing_features:
+            feature = FeatureOption(
+                feature_type=feature_type,
+                display_name=option,
+                description=f"{option} option for {feature_type.replace('_', ' ').title()}"
+            )
+            db.session.add(feature)
+            created_count += 1
+        else:
+            existing_count += 1
 
     db.session.commit()
     print(f"  ✓ Created {created_count} feature options, {existing_count} already existed")
