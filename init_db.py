@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import configparser
@@ -204,6 +205,69 @@ def create_sample_scheduler_jobs():
 
 
 
+def init_db_headless(db_host, db_port, db_name, db_user, db_password, migrate_only=False, create_sample_data=False):
+    """Non-interactive database initialization for automated installation."""
+    from urllib.parse import quote_plus
+
+    print("\n" + "="*80)
+    print("LEDGER DATABASE INITIALIZATION (HEADLESS MODE)")
+    print("="*80)
+
+    instance_path = app.instance_path
+    os.makedirs(instance_path, exist_ok=True)
+    config_path = os.path.join(instance_path, 'ledger.conf')
+
+    config = configparser.RawConfigParser()
+
+    # Build connection string
+    escaped_password = quote_plus(db_password)
+    conn_string = f"postgresql://{db_user}:{escaped_password}@{db_host}:{db_port}/{db_name}"
+
+    # Test connection
+    print(f"\n→ Testing database connection to {db_host}:{db_port}/{db_name}...")
+    try:
+        engine = create_engine(conn_string)
+        with engine.connect() as connection:
+            print("✓ Database connection successful")
+    except Exception as e:
+        print(f"✗ Connection failed: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Save configuration
+    if not config.has_section('database'):
+        config.add_section('database')
+    config.set('database', 'connection_string', conn_string)
+
+    if not config.has_section('database_credentials'):
+        config.add_section('database_credentials')
+    config.set('database_credentials', 'db_host', db_host)
+    config.set('database_credentials', 'db_port', db_port)
+    config.set('database_credentials', 'db_name', db_name)
+    config.set('database_credentials', 'db_user', db_user)
+
+    with open(config_path, 'w') as configfile:
+        config.write(configfile)
+    print(f"✓ Configuration saved to: {config_path}")
+
+    # Initialize database schema
+    print("\n→ Initializing database schema...")
+    with app.app_context():
+        db.create_all()
+        print("✓ Database schema initialized successfully!")
+
+        if create_sample_data:
+            print("\n→ Creating sample billing plans and features...")
+            create_sample_billing_plans()
+            create_feature_options()
+            create_sample_scheduler_jobs()
+            print("✓ Sample data created")
+
+    print("\n" + "="*80)
+    print(" ✓ Ledger Initialization Complete!")
+    print("="*80)
+
+
+
 def init_db():
     """Interactively configures and initializes the database."""
     instance_path = app.instance_path
@@ -274,4 +338,70 @@ def init_db():
 
 
 if __name__ == '__main__':
-    init_db()
+    parser = argparse.ArgumentParser(
+        description='Initialize Ledger database schema',
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        '--headless',
+        action='store_true',
+        help='Non-interactive mode for automated installation'
+    )
+    parser.add_argument(
+        '--db-host',
+        type=str,
+        default='localhost',
+        help='Database host (default: localhost)'
+    )
+    parser.add_argument(
+        '--db-port',
+        type=str,
+        default='5432',
+        help='Database port (default: 5432)'
+    )
+    parser.add_argument(
+        '--db-name',
+        type=str,
+        default='ledger_db',
+        help='Database name (default: ledger_db)'
+    )
+    parser.add_argument(
+        '--db-user',
+        type=str,
+        default='ledger_user',
+        help='Database user (default: ledger_user)'
+    )
+    parser.add_argument(
+        '--db-password',
+        type=str,
+        help='Database password (required for headless mode)'
+    )
+    parser.add_argument(
+        '--migrate-only',
+        action='store_true',
+        help='Only run migrations on existing database'
+    )
+    parser.add_argument(
+        '--create-sample-data',
+        action='store_true',
+        help='Create sample billing plans and features (headless mode only)'
+    )
+
+    args = parser.parse_args()
+
+    if args.headless:
+        if not args.db_password:
+            print("ERROR: --db-password is required for headless mode", file=sys.stderr)
+            sys.exit(1)
+
+        init_db_headless(
+            db_host=args.db_host,
+            db_port=args.db_port,
+            db_name=args.db_name,
+            db_user=args.db_user,
+            db_password=args.db_password,
+            migrate_only=args.migrate_only,
+            create_sample_data=args.create_sample_data
+        )
+    else:
+        init_db()
