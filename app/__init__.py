@@ -8,6 +8,9 @@ app = Flask(__name__, instance_relative_config=True)
 # Set secret key for sessions (generate a random one if not set)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 
+# Enable template auto-reload for development
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+
 # --- Explicitly load all required configuration from environment variables ---
 # Provide sensible defaults for init_db.py, will be overridden by Helm's .flaskenv
 app.config['CORE_SERVICE_URL'] = os.environ.get('CORE_SERVICE_URL', 'http://localhost:5000')
