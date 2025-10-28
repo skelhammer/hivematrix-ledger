@@ -3,6 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Settings - HiveMatrix Ledger</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+    </style>
 </head>
 <body>
     <div class="card">
@@ -15,7 +23,7 @@
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+    <div class="admin-grid u-mt-2">
         <!-- Billing Plans Card -->
         <div class="card">
             <div class="card__header">
@@ -23,9 +31,12 @@
             </div>
             <div class="card__body">
                 <p><strong>Total Plans:</strong> {{ plans_count }}</p>
-                <p>Manage base pricing structures and term lengths</p>
+                <p class="u-mb-1">Manage base pricing structures and term lengths</p>
                 <a href="/ledger/admin/plans" class="btn btn--primary">
-                    <span class="btn__label">Manage Plans</span>
+                    <span class="btn__label">
+                        <i data-lucide="file-text" class="btn__icon"></i>
+                        Manage Plans
+                    </span>
                 </a>
             </div>
         </div>
@@ -37,9 +48,12 @@
             </div>
             <div class="card__body">
                 <p><strong>Total Features:</strong> {{ features_count }}</p>
-                <p>Configure available feature options for billing</p>
+                <p class="u-mb-1">Configure available feature options for billing</p>
                 <a href="/ledger/admin/features" class="btn btn--primary">
-                    <span class="btn__label">Manage Features</span>
+                    <span class="btn__label">
+                        <i data-lucide="package" class="btn__icon"></i>
+                        Manage Features
+                    </span>
                 </a>
             </div>
         </div>
@@ -51,62 +65,87 @@
             </div>
             <div class="card__body">
                 <p><strong>Configured Jobs:</strong> {{ jobs_count }}</p>
-                <p>Manage automated data sync and puller scripts</p>
+                <p class="u-mb-1">Manage automated data sync and puller scripts</p>
                 <a href="/ledger/admin/pullers" class="btn btn--primary">
-                    <span class="btn__label">Manage Pullers</span>
+                    <span class="btn__label">
+                        <i data-lucide="refresh-cw" class="btn__icon"></i>
+                        Manage Pullers
+                    </span>
                 </a>
             </div>
         </div>
     </div>
 
     {% if recent_jobs %}
-    <div class="card" style="margin-top: 20px;">
+    <div class="card u-mt-2">
         <div class="card__header">
             <h2 class="card__title">Recent Puller Runs</h2>
         </div>
         <div class="card__body">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Job Name</th>
-                        <th>Last Run</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for job in recent_jobs %}
-                    <tr>
-                        <td>{{ job.job_name }}</td>
-                        <td>{{ job.last_run or 'Never' }}</td>
-                        <td>
-                            {% if job.last_status == 'Success' %}
-                            <span style="color: green;">✓ {{ job.last_status }}</span>
-                            {% elif job.last_status == 'Running' %}
-                            <span style="color: blue;">⏳ {{ job.last_status }}</span>
-                            {% elif job.last_status %}
-                            <span style="color: red;">✗ {{ job.last_status }}</span>
-                            {% else %}
-                            <span style="color: gray;">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="/ledger/admin/pullers/log/{{ job.id }}" class="btn">
-                                <span class="btn__label">View Log</span>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Job Name</th>
+                            <th>Last Run</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in recent_jobs %}
+                        <tr>
+                            <td>{{ job.job_name }}</td>
+                            <td>{{ job.last_run or 'Never' }}</td>
+                            <td>
+                                {% if job.last_status == 'Success' %}
+                                <span class="u-text-success">
+                                    <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                    {{ job.last_status }}
+                                </span>
+                                {% elif job.last_status == 'Running' %}
+                                <span class="u-text-info">
+                                    <i data-lucide="loader" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                    {{ job.last_status }}
+                                </span>
+                                {% elif job.last_status %}
+                                <span class="u-text-danger">
+                                    <i data-lucide="alert-circle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                    {{ job.last_status }}
+                                </span>
+                                {% else %}
+                                <span class="u-text-secondary">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="/ledger/admin/pullers/log/{{ job.id }}" class="btn">
+                                    <span class="btn__label">
+                                        <i data-lucide="file-text" class="btn__icon"></i>
+                                        View Log
+                                    </span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     {% endif %}
 
-    <div style="margin-top: 20px;">
+    <div class="u-mt-2">
         <a href="/ledger/" class="btn">
-            <span class="btn__label">Back to Dashboard</span>
+            <span class="btn__label">
+                <i data-lucide="arrow-left" class="btn__icon"></i>
+                Back to Dashboard
+            </span>
         </a>
     </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
 </body>
 </html>

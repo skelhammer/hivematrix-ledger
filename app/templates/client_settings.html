@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ company.name }} - Billing Settings - HiveMatrix Ledger</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
     <div class="card">
@@ -11,13 +12,20 @@
         </div>
         <div class="card__body">
             <p><strong>Account Number:</strong> {{ company.account_number }}</p>
-            <p><a href="/ledger/client/{{ company.account_number }}" class="btn"><span class="btn__label">← Back to Billing Details</span></a></p>
+            <p>
+                <a href="/ledger/client/{{ company.account_number }}" class="btn">
+                    <span class="btn__label">
+                        <i data-lucide="arrow-left" class="btn__icon"></i>
+                        Back to Billing Details
+                    </span>
+                </a>
+            </p>
         </div>
     </div>
 
     <form method="POST" action="/ledger/client/{{ company.account_number }}/settings">
         <!-- Billing Rate Overrides -->
-        <div class="card" style="margin-top: 20px;">
+        <div class="card u-mt-2">
             <div class="card__header">
                 <h2 class="card__title">Billing Rate Overrides</h2>
             </div>
@@ -110,12 +118,12 @@
         </div>
 
         <!-- Plan Feature Overrides -->
-        <div class="card" style="margin-top: 20px;">
+        <div class="card u-mt-2">
             <div class="card__header">
                 <h2 class="card__title">Plan Feature Overrides</h2>
             </div>
             <div class="card__body">
-                <p style="margin-bottom: 15px; color: #666;">
+                <p class="u-mb-1 u-text-secondary">
                     Override specific features from the billing plan configured in Codex. Only enabled overrides will be applied.
                 </p>
                 <table class="table--overrides">
@@ -159,12 +167,13 @@
         </div>
 
         <!-- Asset Billing Overrides -->
-        <div class="card" style="margin-top: 20px;">
+        <div class="card u-mt-2">
             <div class="card__header">
                 <h2 class="card__title">Asset Billing Overrides</h2>
             </div>
             <div class="card__body">
-                <table>
+                <div class="table-wrapper">
+                    <table class="data-table">
                     <thead>
                         <tr>
                             <th>Hostname</th>
@@ -195,9 +204,11 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
 
-                <h3 style="margin-top: 20px;">Manually Added Assets</h3>
-                <table>
+                <h3 class="u-mt-2">Manually Added Assets</h3>
+                <div class="table-wrapper">
+                    <table class="data-table">
                     <thead>
                         <tr>
                             <th>Hostname</th>
@@ -214,16 +225,20 @@
                             <td>${{ "%.2f"|format(asset.custom_cost|float) if asset.custom_cost is not none else '0.00' }}</td>
                             <td>
                                 <a href="/ledger/client/{{ company.account_number }}/settings?delete_manual_asset={{ asset.id }}" class="btn btn--danger" onclick="return confirm('Delete this asset?')">
-                                    <span class="btn__label">Delete</span>
+                                    <span class="btn__label">
+                                        <i data-lucide="trash-2" class="btn__icon"></i>
+                                        Delete
+                                    </span>
                                 </a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
 
-                <h3 style="margin-top: 20px;">Add Manual Asset</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+                <h3 class="u-mt-2">Add Manual Asset</h3>
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr auto; align-items: end;">
                     <div>
                         <label>Hostname:</label>
                         <input type="text" name="manual_asset_hostname" class="input" placeholder="hostname">
@@ -243,19 +258,23 @@
                         <input type="number" step="0.01" name="manual_asset_custom_cost" class="input" placeholder="0.00">
                     </div>
                     <button type="submit" name="action" value="add_manual_asset" class="btn btn--primary">
-                        <span class="btn__label">Add Asset</span>
+                        <span class="btn__label">
+                            <i data-lucide="plus" class="btn__icon"></i>
+                            Add Asset
+                        </span>
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- User Billing Overrides -->
-        <div class="card" style="margin-top: 20px;">
+        <div class="card u-mt-2">
             <div class="card__header">
                 <h2 class="card__title">User Billing Overrides</h2>
             </div>
             <div class="card__body">
-                <table>
+                <div class="table-wrapper">
+                    <table class="data-table">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -282,9 +301,11 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
 
-                <h3 style="margin-top: 20px;">Manually Added Users</h3>
-                <table>
+                <h3 class="u-mt-2">Manually Added Users</h3>
+                <div class="table-wrapper">
+                    <table class="data-table">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -301,16 +322,20 @@
                             <td>${{ "%.2f"|format(user.custom_cost|float) if user.custom_cost is not none else '0.00' }}</td>
                             <td>
                                 <a href="/ledger/client/{{ company.account_number }}/settings?delete_manual_user={{ user.id }}" class="btn btn--danger" onclick="return confirm('Delete this user?')">
-                                    <span class="btn__label">Delete</span>
+                                    <span class="btn__label">
+                                        <i data-lucide="trash-2" class="btn__icon"></i>
+                                        Delete
+                                    </span>
                                 </a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
 
-                <h3 style="margin-top: 20px;">Add Manual User</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+                <h3 class="u-mt-2">Add Manual User</h3>
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr auto; align-items: end;">
                     <div>
                         <label>Full Name:</label>
                         <input type="text" name="manual_user_name" class="input" placeholder="John Doe">
@@ -328,19 +353,23 @@
                         <input type="number" step="0.01" name="manual_user_custom_cost" class="input" placeholder="0.00">
                     </div>
                     <button type="submit" name="action" value="add_manual_user" class="btn btn--primary">
-                        <span class="btn__label">Add User</span>
+                        <span class="btn__label">
+                            <i data-lucide="plus" class="btn__icon"></i>
+                            Add User
+                        </span>
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- Custom Line Items -->
-        <div class="card" style="margin-top: 20px;">
+        <div class="card u-mt-2">
             <div class="card__header">
                 <h2 class="card__title">Custom Line Items</h2>
             </div>
             <div class="card__body">
-                <table>
+                <div class="table-wrapper">
+                    <table class="data-table">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -367,17 +396,21 @@
                             </td>
                             <td>
                                 <a href="/ledger/client/{{ company.account_number }}/settings?delete_line_item={{ item.id }}" class="btn btn--danger" onclick="return confirm('Delete this line item?')">
-                                    <span class="btn__label">Delete</span>
+                                    <span class="btn__label">
+                                        <i data-lucide="trash-2" class="btn__icon"></i>
+                                        Delete
+                                    </span>
                                 </a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
 
-                <h3 style="margin-top: 20px;">Add New Line Item</h3>
+                <h3 class="u-mt-2">Add New Line Item</h3>
                 <div style="display: grid; gap: 10px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-grid">
                         <div>
                             <label>Item Name:</label>
                             <input type="text" name="line_item_name" class="input" placeholder="Additional Service">
@@ -397,7 +430,7 @@
                         <input type="number" step="0.01" name="line_item_recurring_fee" class="input" placeholder="0.00">
                     </div>
 
-                    <div id="one_off_fields" style="display:none; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div id="one_off_fields" class="form-grid" style="display:none;">
                         <div>
                             <label>One-Off Fee:</label>
                             <input type="number" step="0.01" name="line_item_one_off_fee" class="input" placeholder="0.00">
@@ -410,7 +443,7 @@
                         </div>
                     </div>
 
-                    <div id="yearly_fields" style="display:none; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div id="yearly_fields" class="form-grid" style="display:none;">
                         <div>
                             <label>Yearly Fee:</label>
                             <input type="number" step="0.01" name="line_item_yearly_fee" class="input" placeholder="0.00">
@@ -424,19 +457,28 @@
                     </div>
 
                     <button type="submit" name="action" value="add_line_item" class="btn btn--primary">
-                        <span class="btn__label">Add Line Item</span>
+                        <span class="btn__label">
+                            <i data-lucide="plus" class="btn__icon"></i>
+                            Add Line Item
+                        </span>
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- Save Button -->
-        <div style="margin-top: 20px; margin-bottom: 40px;">
+        <div class="u-mt-2 u-mb-2">
             <button type="submit" name="action" value="save_overrides" class="btn btn--primary">
-                <span class="btn__label">💾 Save All Settings</span>
+                <span class="btn__label">
+                    <i data-lucide="save" class="btn__icon"></i>
+                    Save All Settings
+                </span>
             </button>
             <a href="/ledger/client/{{ company.account_number }}" class="btn">
-                <span class="btn__label">Cancel</span>
+                <span class="btn__label">
+                    <i data-lucide="x" class="btn__icon"></i>
+                    Cancel
+                </span>
             </a>
         </div>
     </form>
@@ -448,6 +490,9 @@
             document.getElementById('one_off_fields').style.display = this.value === 'one_off' ? 'grid' : 'none';
             document.getElementById('yearly_fields').style.display = this.value === 'yearly' ? 'grid' : 'none';
         });
+
+        // Initialize Lucide icons
+        lucide.createIcons();
     </script>
 </body>
 </html>

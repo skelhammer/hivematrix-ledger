@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Data Pullers - Admin</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
     <div class="card">
@@ -10,48 +11,57 @@
             <h1 class="card__title">Data Sync Jobs & Pullers</h1>
         </div>
         <div class="card__body">
-            <p>Manage automated sync jobs for pulling data from external systems.</p>
+            <p class="u-mb-1">Manage automated sync jobs for pulling data from external systems.</p>
             <button class="btn btn--primary" onclick="showAddForm()">
-                <span class="btn__label">+ Add New Puller</span>
+                <span class="btn__label">
+                    <i data-lucide="plus" class="btn__icon"></i>
+                    Add New Puller
+                </span>
             </button>
         </div>
     </div>
 
     <!-- Add Puller Form -->
-    <div class="card" id="addForm" style="margin-top: 20px; display: none;">
+    <div class="card u-mt-2" id="addForm" style="display: none;">
         <div class="card__header">
             <h2 class="card__title">Add New Sync Job</h2>
         </div>
         <div class="card__body">
             <form method="POST" action="/ledger/admin/pullers/add">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div>
+                <div class="form-grid">
+                    <div class="form-group">
                         <label>Job Name *</label>
                         <input type="text" name="job_name" required placeholder="e.g., Sync Tickets from Freshservice">
                     </div>
-                    <div>
+                    <div class="form-group">
                         <label>Script Path *</label>
                         <input type="text" name="script_path" required placeholder="e.g., sync_tickets_from_freshservice.py">
                     </div>
-                    <div>
+                    <div class="form-group">
                         <label>Schedule (Cron)</label>
                         <input type="text" name="schedule_cron" placeholder="e.g., 0 */6 * * * (every 6 hours)">
                     </div>
-                    <div>
+                    <div class="form-group">
                         <label>Enabled</label>
                         <input type="checkbox" name="enabled" checked>
                     </div>
                 </div>
-                <div style="margin-top: 15px;">
+                <div class="form-group u-mt-1">
                     <label>Description</label>
                     <textarea name="description" rows="3" placeholder="Brief description of what this job does"></textarea>
                 </div>
-                <div style="margin-top: 15px;">
+                <div class="u-mt-1">
                     <button type="submit" class="btn btn--primary">
-                        <span class="btn__label">Create Job</span>
+                        <span class="btn__label">
+                            <i data-lucide="check" class="btn__icon"></i>
+                            Create Job
+                        </span>
                     </button>
                     <button type="button" class="btn" onclick="hideAddForm()">
-                        <span class="btn__label">Cancel</span>
+                        <span class="btn__label">
+                            <i data-lucide="x" class="btn__icon"></i>
+                            Cancel
+                        </span>
                     </button>
                 </div>
             </form>
@@ -59,75 +69,103 @@
     </div>
 
     <!-- Existing Jobs -->
-    <div class="card" style="margin-top: 20px;">
+    <div class="card u-mt-2">
         <div class="card__header">
             <h2 class="card__title">Configured Sync Jobs</h2>
         </div>
         <div class="card__body">
             {% if jobs %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Job Name</th>
-                        <th>Script</th>
-                        <th>Schedule</th>
-                        <th>Last Run</th>
-                        <th>Status</th>
-                        <th>Enabled</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for job in jobs %}
-                    <tr>
-                        <td><strong>{{ job.job_name }}</strong></td>
-                        <td><code>{{ job.script_path }}</code></td>
-                        <td>{{ job.schedule_cron or 'Manual' }}</td>
-                        <td>{{ job.last_run or 'Never' }}</td>
-                        <td>
-                            {% if job.last_status == 'Success' %}
-                            <span style="color: green;">✓ Success</span>
-                            {% elif job.last_status == 'Running' %}
-                            <span style="color: blue;">⏳ Running...</span>
-                            {% elif job.last_status == 'Failure' %}
-                            <span style="color: red;">✗ Failed</span>
-                            {% elif job.last_status == 'Error' %}
-                            <span style="color: red;">✗ Error</span>
-                            {% elif job.last_status == 'Timeout' %}
-                            <span style="color: orange;">⚠ Timeout</span>
-                            {% else %}
-                            <span style="color: gray;">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if job.enabled %}
-                            <span style="color: green;">✓</span>
-                            {% else %}
-                            <span style="color: red;">✗</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <form method="POST" action="/ledger/admin/pullers/run/{{ job.id }}" style="display: inline;">
-                                <button type="submit" class="btn btn--primary" {% if job.last_status == 'Running' %}disabled{% endif %}>
-                                    <span class="btn__label">▶ Run Now</span>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Job Name</th>
+                            <th>Script</th>
+                            <th>Schedule</th>
+                            <th>Last Run</th>
+                            <th>Status</th>
+                            <th>Enabled</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in jobs %}
+                        <tr>
+                            <td><strong>{{ job.job_name }}</strong></td>
+                            <td><code>{{ job.script_path }}</code></td>
+                            <td>{{ job.schedule_cron or 'Manual' }}</td>
+                            <td>{{ job.last_run or 'Never' }}</td>
+                            <td>
+                                {% if job.last_status == 'Success' %}
+                                <span class="u-text-success">
+                                    <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                    Success
+                                </span>
+                                {% elif job.last_status == 'Running' %}
+                                <span class="u-text-info">
+                                    <i data-lucide="loader" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                    Running...
+                                </span>
+                                {% elif job.last_status == 'Failure' or job.last_status == 'Error' %}
+                                <span class="u-text-danger">
+                                    <i data-lucide="alert-circle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                    {{ job.last_status }}
+                                </span>
+                                {% elif job.last_status == 'Timeout' %}
+                                <span class="u-text-warning">
+                                    <i data-lucide="alert-triangle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                    Timeout
+                                </span>
+                                {% else %}
+                                <span class="u-text-secondary">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if job.enabled %}
+                                <span class="u-text-success">
+                                    <i data-lucide="check" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                </span>
+                                {% else %}
+                                <span class="u-text-danger">
+                                    <i data-lucide="x" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="/ledger/admin/pullers/run/{{ job.id }}" style="display: inline;">
+                                    <button type="submit" class="btn btn--primary" {% if job.last_status == 'Running' %}disabled{% endif %}>
+                                        <span class="btn__label">
+                                            <i data-lucide="play" class="btn__icon"></i>
+                                            Run Now
+                                        </span>
+                                    </button>
+                                </form>
+                                <a href="/ledger/admin/pullers/log/{{ job.id }}" class="btn">
+                                    <span class="btn__label">
+                                        <i data-lucide="file-text" class="btn__icon"></i>
+                                        View Log
+                                    </span>
+                                </a>
+                                <button class="btn" onclick="editJob({{ job.id }}, '{{ job.job_name }}', '{{ job.script_path }}', '{{ job.schedule_cron or '' }}', {{ job.enabled|lower }}, '{{ job.description or '' }}')">
+                                    <span class="btn__label">
+                                        <i data-lucide="edit" class="btn__icon"></i>
+                                        Edit
+                                    </span>
                                 </button>
-                            </form>
-                            <a href="/ledger/admin/pullers/log/{{ job.id }}" class="btn">
-                                <span class="btn__label">📋 View Log</span>
-                            </a>
-                            <button class="btn" onclick="editJob({{ job.id }}, '{{ job.job_name }}', '{{ job.script_path }}', '{{ job.schedule_cron or '' }}', {{ job.enabled|lower }}, '{{ job.description or '' }}')">
-                                <span class="btn__label">Edit</span>
-                            </button>
-                            <form method="POST" action="/ledger/admin/pullers/delete/{{ job.id }}" style="display: inline;" onsubmit="return confirm('Delete {{ job.job_name }}?')">
-                                <button type="submit" class="btn btn--danger">
-                                    <span class="btn__label">Delete</span>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                                <form method="POST" action="/ledger/admin/pullers/delete/{{ job.id }}" style="display: inline;" onsubmit="return confirm('Delete {{ job.job_name }}?')">
+                                    <button type="submit" class="btn btn--danger">
+                                        <span class="btn__label">
+                                            <i data-lucide="trash-2" class="btn__icon"></i>
+                                            Delete
+                                        </span>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% else %}
             <p>No sync jobs configured yet. Add one to start pulling data.</p>
             {% endif %}
@@ -135,55 +173,65 @@
     </div>
 
     <!-- Edit Form (hidden, populated by JS) -->
-    <div class="card" id="editForm" style="margin-top: 20px; display: none;">
+    <div class="card u-mt-2" id="editForm" style="display: none;">
         <div class="card__header">
             <h2 class="card__title">Edit Sync Job</h2>
         </div>
         <div class="card__body">
             <form method="POST" id="editFormElement">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div>
+                <div class="form-grid">
+                    <div class="form-group">
                         <label>Job Name *</label>
                         <input type="text" name="job_name" id="edit_job_name" required>
                     </div>
-                    <div>
+                    <div class="form-group">
                         <label>Script Path *</label>
                         <input type="text" name="script_path" id="edit_script_path" required>
                     </div>
-                    <div>
+                    <div class="form-group">
                         <label>Schedule (Cron)</label>
                         <input type="text" name="schedule_cron" id="edit_schedule_cron">
                     </div>
-                    <div>
+                    <div class="form-group">
                         <label>Enabled</label>
                         <input type="checkbox" name="enabled" id="edit_enabled">
                     </div>
                 </div>
-                <div style="margin-top: 15px;">
+                <div class="form-group u-mt-1">
                     <label>Description</label>
                     <textarea name="description" id="edit_description" rows="3"></textarea>
                 </div>
-                <div style="margin-top: 15px;">
+                <div class="u-mt-1">
                     <button type="submit" class="btn btn--primary">
-                        <span class="btn__label">Update Job</span>
+                        <span class="btn__label">
+                            <i data-lucide="check" class="btn__icon"></i>
+                            Update Job
+                        </span>
                     </button>
                     <button type="button" class="btn" onclick="hideEditForm()">
-                        <span class="btn__label">Cancel</span>
+                        <span class="btn__label">
+                            <i data-lucide="x" class="btn__icon"></i>
+                            Cancel
+                        </span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div style="margin-top: 20px;">
+    <div class="u-mt-2">
         <a href="/ledger/admin/settings" class="btn">
-            <span class="btn__label">Back to Admin</span>
+            <span class="btn__label">
+                <i data-lucide="arrow-left" class="btn__icon"></i>
+                Back to Admin
+            </span>
         </a>
     </div>
 
     <script>
         function showAddForm() {
             document.getElementById('addForm').style.display = 'block';
+            lucide.createIcons();
         }
 
         function hideAddForm() {
@@ -198,11 +246,15 @@
             document.getElementById('edit_description').value = description;
             document.getElementById('editFormElement').action = '/ledger/admin/pullers/edit/' + id;
             document.getElementById('editForm').style.display = 'block';
+            lucide.createIcons();
         }
 
         function hideEditForm() {
             document.getElementById('editForm').style.display = 'none';
         }
+
+        // Initialize Lucide icons
+        lucide.createIcons();
     </script>
 </body>
 </html>

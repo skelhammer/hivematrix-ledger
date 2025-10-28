@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Feature Options - Admin</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
     <div class="card">
@@ -10,40 +11,49 @@
             <h1 class="card__title">Feature Options Management</h1>
         </div>
         <div class="card__body">
-            <p>Configure available features that can be added to billing plans and client overrides.</p>
+            <p class="u-mb-1">Configure available features that can be added to billing plans and client overrides.</p>
             <button class="btn btn--primary" onclick="showAddForm()">
-                <span class="btn__label">+ Add New Feature</span>
+                <span class="btn__label">
+                    <i data-lucide="plus" class="btn__icon"></i>
+                    Add New Feature
+                </span>
             </button>
         </div>
     </div>
 
     <!-- Add Feature Form -->
-    <div class="card" id="addForm" style="margin-top: 20px; display: none;">
+    <div class="card u-mt-2" id="addForm" style="display: none;">
         <div class="card__header">
             <h2 class="card__title">Add New Feature Option</h2>
         </div>
         <div class="card__body">
             <form method="POST" action="/ledger/admin/features/add">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div>
+                <div class="form-grid">
+                    <div class="form-group">
                         <label>Feature Type *</label>
                         <input type="text" name="feature_type" required placeholder="e.g., Email Protection">
                     </div>
-                    <div>
+                    <div class="form-group">
                         <label>Display Name *</label>
                         <input type="text" name="display_name" required placeholder="e.g., Advanced Email Security">
                     </div>
                 </div>
-                <div style="margin-top: 15px;">
+                <div class="form-group u-mt-1">
                     <label>Description</label>
                     <textarea name="description" rows="3" placeholder="Brief description of this feature"></textarea>
                 </div>
-                <div style="margin-top: 15px;">
+                <div class="u-mt-1">
                     <button type="submit" class="btn btn--primary">
-                        <span class="btn__label">Create Feature</span>
+                        <span class="btn__label">
+                            <i data-lucide="check" class="btn__icon"></i>
+                            Create Feature
+                        </span>
                     </button>
                     <button type="button" class="btn" onclick="hideAddForm()">
-                        <span class="btn__label">Cancel</span>
+                        <span class="btn__label">
+                            <i data-lucide="x" class="btn__icon"></i>
+                            Cancel
+                        </span>
                     </button>
                 </div>
             </form>
@@ -52,61 +62,73 @@
 
     <!-- Grouped Features -->
     {% for feature_type, features in grouped_features.items() %}
-    <div class="card" style="margin-top: 20px;">
+    <div class="card u-mt-2">
         <div class="card__header">
             <h2 class="card__title">{{ feature_type }}</h2>
         </div>
         <div class="card__body">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Display Name</th>
-                        <th>Description</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for feature in features %}
-                    <tr>
-                        <td><strong>{{ feature.display_name }}</strong></td>
-                        <td>{{ feature.description or '-' }}</td>
-                        <td>
-                            <form method="POST" action="/ledger/admin/features/delete/{{ feature.id }}" style="display: inline;" onsubmit="return confirm('Delete {{ feature.display_name }}?')">
-                                <button type="submit" class="btn btn--danger">
-                                    <span class="btn__label">Delete</span>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Display Name</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for feature in features %}
+                        <tr>
+                            <td><strong>{{ feature.display_name }}</strong></td>
+                            <td>{{ feature.description or '-' }}</td>
+                            <td>
+                                <form method="POST" action="/ledger/admin/features/delete/{{ feature.id }}" style="display: inline;" onsubmit="return confirm('Delete {{ feature.display_name }}?')">
+                                    <button type="submit" class="btn btn--danger">
+                                        <span class="btn__label">
+                                            <i data-lucide="trash-2" class="btn__icon"></i>
+                                            Delete
+                                        </span>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     {% endfor %}
 
     {% if not grouped_features %}
-    <div class="card" style="margin-top: 20px;">
+    <div class="card u-mt-2">
         <div class="card__body">
             <p>No features configured yet. Add one to get started.</p>
         </div>
     </div>
     {% endif %}
 
-    <div style="margin-top: 20px;">
+    <div class="u-mt-2">
         <a href="/ledger/admin/settings" class="btn">
-            <span class="btn__label">Back to Admin</span>
+            <span class="btn__label">
+                <i data-lucide="arrow-left" class="btn__icon"></i>
+                Back to Admin
+            </span>
         </a>
     </div>
 
     <script>
         function showAddForm() {
             document.getElementById('addForm').style.display = 'block';
+            lucide.createIcons();
         }
 
         function hideAddForm() {
             document.getElementById('addForm').style.display = 'none';
         }
+
+        // Initialize Lucide icons
+        lucide.createIcons();
     </script>
 </body>
 </html>

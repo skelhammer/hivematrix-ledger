@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Error - HiveMatrix Ledger</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
     <div class="card">
@@ -10,11 +11,19 @@
             <h1 class="card__title">Error</h1>
         </div>
         <div class="card__body">
-            <p>{{ message }}</p>
+            <p class="u-mb-1">{{ message }}</p>
             <a href="/ledger/" class="btn btn--primary">
-                <span class="btn__label">Back to Dashboard</span>
+                <span class="btn__label">
+                    <i data-lucide="arrow-left" class="btn__icon"></i>
+                    Back to Dashboard
+                </span>
             </a>
         </div>
     </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
 </body>
 </html>

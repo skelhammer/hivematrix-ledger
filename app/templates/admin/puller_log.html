@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Puller Log - {{ job.job_name }}</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
     <div class="card">
@@ -15,42 +16,65 @@
             <p>
                 <strong>Status:</strong>
                 {% if job.last_status == 'Success' %}
-                <span style="color: green;">✓ Success</span>
+                <span class="u-text-success">
+                    <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                    Success
+                </span>
                 {% elif job.last_status == 'Running' %}
-                <span style="color: blue;">⏳ Running...</span>
+                <span class="u-text-info">
+                    <i data-lucide="loader" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                    Running...
+                </span>
                 {% elif job.last_status in ['Failure', 'Error'] %}
-                <span style="color: red;">✗ {{ job.last_status }}</span>
+                <span class="u-text-danger">
+                    <i data-lucide="alert-circle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                    {{ job.last_status }}
+                </span>
                 {% elif job.last_status == 'Timeout' %}
-                <span style="color: orange;">⚠ Timeout</span>
+                <span class="u-text-warning">
+                    <i data-lucide="alert-triangle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                    Timeout
+                </span>
                 {% else %}
-                <span style="color: gray;">-</span>
+                <span class="u-text-secondary">-</span>
                 {% endif %}
             </p>
         </div>
     </div>
 
-    <div class="card" style="margin-top: 20px;">
+    <div class="card u-mt-2">
         <div class="card__header">
             <h2 class="card__title">Output Log</h2>
         </div>
         <div class="card__body">
             {% if job.last_run_log %}
-            <pre style="background: #f5f5f5; padding: 15px; overflow-x: auto; max-height: 600px; overflow-y: auto;">{{ job.last_run_log }}</pre>
+            <pre class="code-block">{{ job.last_run_log }}</pre>
             {% else %}
             <p>No log output available. This job hasn't been run yet.</p>
             {% endif %}
         </div>
     </div>
 
-    <div style="margin-top: 20px;">
+    <div class="u-mt-2">
         <form method="POST" action="/ledger/admin/pullers/run/{{ job.id }}" style="display: inline;">
             <button type="submit" class="btn btn--primary" {% if job.last_status == 'Running' %}disabled{% endif %}>
-                <span class="btn__label">▶ Run Again</span>
+                <span class="btn__label">
+                    <i data-lucide="play" class="btn__icon"></i>
+                    Run Again
+                </span>
             </button>
         </form>
         <a href="/ledger/admin/pullers" class="btn">
-            <span class="btn__label">Back to Pullers</span>
+            <span class="btn__label">
+                <i data-lucide="arrow-left" class="btn__icon"></i>
+                Back to Pullers
+            </span>
         </a>
     </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
 </body>
 </html>

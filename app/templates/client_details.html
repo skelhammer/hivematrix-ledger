@@ -3,11 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ data.client.name }} - Billing Details</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
     <div class="card">
         <div class="card__header">
             <h1 class="card__title">{{ data.client.name }}</h1>
+            <div class="card__header-actions">
+                <button class="btn btn--primary" onclick="window.location.href='/ledger/'">
+                    <span class="btn__label">
+                        <i data-lucide="arrow-left" class="btn__icon"></i>
+                        Back to Dashboard
+                    </span>
+                </button>
+            </div>
         </div>
         <div class="card__body">
             <p><strong>Account Number:</strong> {{ account_number }}</p>
@@ -20,170 +29,208 @@
             {% endif %}
             <p><strong>Contract End:</strong> {{ data.contract_end_date }}</p>
             {% if data.contract_expired %}
-            <p style="color: red;"><strong>⚠️ Contract Expired</strong></p>
+            <p class="u-text-danger u-font-bold">
+                <i data-lucide="alert-triangle" style="width: 16px; height: 16px; vertical-align: middle;"></i>
+                Contract Expired
+            </p>
             {% endif %}
         </div>
     </div>
 
     {% if data.plan_features %}
-    <div class="card" style="margin-top: 20px;">
+    <div class="card u-mt-2">
         <div class="card__header">
             <h2 class="card__title">Plan Features & Inclusions</h2>
         </div>
         <div class="card__body">
-            <p><em>Features included with {{ data.client.billing_plan or 'your plan' }}:</em></p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Feature</th>
-                        <th>Included Solution</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for feature, value in data.plan_features.items() %}
-                    {% if value and value != 'Not Included' %}
-                    <tr>
-                        <td><strong>{{ feature.replace('_', ' ').title() }}</strong></td>
-                        <td>{{ value }}</td>
-                        <td>
-                            {% if data.feature_override_status.get(feature, False) %}
-                                <span style="color: orange;">⚠️ Customized</span>
-                            {% else %}
-                                <span style="color: green;">✓ From Plan</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
-            <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
-                <strong>⚠️ Customized</strong> = Override configured in Ledger (differs from Codex plan default)<br>
-                <strong>✓ From Plan</strong> = Standard feature from billing plan in Codex
+            <p class="u-mb-2"><em>Features included with {{ data.client.billing_plan or 'your plan' }}:</em></p>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Included Solution</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for feature, value in data.plan_features.items() %}
+                        {% if value and value != 'Not Included' %}
+                        <tr>
+                            <td><strong>{{ feature.replace('_', ' ').title() }}</strong></td>
+                            <td>{{ value }}</td>
+                            <td>
+                                {% if data.feature_override_status.get(feature, False) %}
+                                    <span class="u-text-warning">
+                                        <i data-lucide="alert-triangle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                        Customized
+                                    </span>
+                                {% else %}
+                                    <span class="u-text-success">
+                                        <i data-lucide="check" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                        From Plan
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="u-mt-1 u-text-small u-text-secondary">
+                <strong>
+                    <i data-lucide="alert-triangle" style="width: 12px; height: 12px; vertical-align: middle;"></i>
+                    Customized
+                </strong> = Override configured in Ledger (differs from Codex plan default)<br>
+                <strong>
+                    <i data-lucide="check" style="width: 12px; height: 12px; vertical-align: middle;"></i>
+                    From Plan
+                </strong> = Standard feature from billing plan in Codex
             </p>
         </div>
     </div>
     {% endif %}
 
-    <div class="card" style="margin-top: 20px;">
+    <div class="card u-mt-2">
         <div class="card__header">
             <h2 class="card__title">Billing Breakdown</h2>
         </div>
         <div class="card__body">
             <h3>Asset Charges</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Asset Name</th>
-                        <th>Type</th>
-                        <th>Cost</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for asset in data.receipt_data.billed_assets %}
-                    <tr>
-                        <td>{{ asset.name }}</td>
-                        <td>{{ asset.type }}</td>
-                        <td>${{ "%.2f"|format(asset.cost) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="2"><strong>Total Asset Charges</strong></td>
-                        <td><strong>${{ "%.2f"|format(data.receipt_data.total_asset_charges) }}</strong></td>
-                    </tr>
-                </tfoot>
-            </table>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Asset Name</th>
+                            <th>Type</th>
+                            <th>Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asset in data.receipt_data.billed_assets %}
+                        <tr>
+                            <td>{{ asset.name }}</td>
+                            <td>{{ asset.type }}</td>
+                            <td>${{ "%.2f"|format(asset.cost) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2"><strong>Total Asset Charges</strong></td>
+                            <td><strong>${{ "%.2f"|format(data.receipt_data.total_asset_charges) }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
 
-            <h3 style="margin-top: 20px;">User Charges</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>User Name</th>
-                        <th>Type</th>
-                        <th>Cost</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in data.receipt_data.billed_users %}
-                    <tr>
-                        <td>{{ user.name }}</td>
-                        <td>{{ user.type }}</td>
-                        <td>${{ "%.2f"|format(user.cost) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="2"><strong>Total User Charges</strong></td>
-                        <td><strong>${{ "%.2f"|format(data.receipt_data.total_user_charges) }}</strong></td>
-                    </tr>
-                </tfoot>
-            </table>
+            <h3 class="u-mt-2">User Charges</h3>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User Name</th>
+                            <th>Type</th>
+                            <th>Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in data.receipt_data.billed_users %}
+                        <tr>
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.type }}</td>
+                            <td>${{ "%.2f"|format(user.cost) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2"><strong>Total User Charges</strong></td>
+                            <td><strong>${{ "%.2f"|format(data.receipt_data.total_user_charges) }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
 
-            <h3 style="margin-top: 20px;">Ticket Hours</h3>
+            <h3 class="u-mt-2">Ticket Hours</h3>
             <p><strong>Hours This Period:</strong> {{ "%.2f"|format(data.receipt_data.hours_for_billing_period) }}</p>
             <p><strong>Prepaid Monthly Hours:</strong> {{ "%.2f"|format(data.receipt_data.prepaid_hours_monthly) }}</p>
             <p><strong>Billable Hours:</strong> {{ "%.2f"|format(data.receipt_data.billable_hours) }}</p>
             <p><strong>Ticket Charges:</strong> ${{ "%.2f"|format(data.receipt_data.ticket_charge) }}</p>
 
-            <h3 style="margin-top: 20px;">Backup Charges</h3>
+            <h3 class="u-mt-2">Backup Charges</h3>
             <p><strong>Total Backup:</strong> {{ "%.2f"|format(data.total_backup_tb) }} TB</p>
             <p><strong>Included:</strong> {{ "%.2f"|format(data.receipt_data.total_included_tb) }} TB</p>
             <p><strong>Overage:</strong> {{ "%.2f"|format(data.receipt_data.overage_tb) }} TB</p>
             <p><strong>Backup Charge:</strong> ${{ "%.2f"|format(data.receipt_data.backup_charge) }}</p>
 
             {% if data.receipt_data.billed_line_items %}
-            <h3 style="margin-top: 20px;">Custom Line Items</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Type</th>
-                        <th>Cost</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in data.receipt_data.billed_line_items %}
-                    <tr>
-                        <td>{{ item.name }}</td>
-                        <td>{{ item.type }}</td>
-                        <td>${{ "%.2f"|format(item.cost) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="2"><strong>Total Line Items</strong></td>
-                        <td><strong>${{ "%.2f"|format(data.receipt_data.total_line_item_charges) }}</strong></td>
-                    </tr>
-                </tfoot>
-            </table>
+            <h3 class="u-mt-2">Custom Line Items</h3>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Type</th>
+                            <th>Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in data.receipt_data.billed_line_items %}
+                        <tr>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.type }}</td>
+                            <td>${{ "%.2f"|format(item.cost) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2"><strong>Total Line Items</strong></td>
+                            <td><strong>${{ "%.2f"|format(data.receipt_data.total_line_item_charges) }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
             {% endif %}
 
-            <h2 style="margin-top: 20px;">Total Bill: ${{ "%.2f"|format(data.receipt_data.total) }}</h2>
+            <h2 class="u-mt-2">Total Bill: ${{ "%.2f"|format(data.receipt_data.total) }}</h2>
 
-            <div style="margin-top: 20px;">
-                <button id="acceptBillBtn" class="btn btn--primary" style="margin-right: 10px;">
-                    <span class="btn__label">Accept Bill & Archive</span>
+            <div class="u-mt-2">
+                <button id="acceptBillBtn" class="btn btn--primary">
+                    <span class="btn__label">
+                        <i data-lucide="check" class="btn__icon"></i>
+                        Accept Bill & Archive
+                    </span>
                 </button>
-                <a href="/invoice/{{ account_number }}/download?year={{ year }}&month={{ month }}" class="btn btn--primary" style="margin-right: 10px;">
-                    <span class="btn__label">Download CSV Invoice</span>
+                <a href="/invoice/{{ account_number }}/download?year={{ year }}&month={{ month }}" class="btn btn--primary">
+                    <span class="btn__label">
+                        <i data-lucide="download" class="btn__icon"></i>
+                        Download CSV Invoice
+                    </span>
                 </a>
                 <a href="/ledger/client/{{ account_number }}/export/quickbooks?year={{ year }}&month={{ month }}" class="btn btn--primary">
-                    <span class="btn__label">Export to QuickBooks (CSV)</span>
+                    <span class="btn__label">
+                        <i data-lucide="file-text" class="btn__icon"></i>
+                        Export to QuickBooks (CSV)
+                    </span>
                 </a>
                 <a href="/ledger/client/{{ account_number }}/settings" class="btn btn--primary">
-                    <span class="btn__label">Billing Settings</span>
+                    <span class="btn__label">
+                        <i data-lucide="settings" class="btn__icon"></i>
+                        Billing Settings
+                    </span>
                 </a>
                 <a href="/ledger/" class="btn">
-                    <span class="btn__label">Back to Dashboard</span>
+                    <span class="btn__label">
+                        <i data-lucide="arrow-left" class="btn__icon"></i>
+                        Back to Dashboard
+                    </span>
                 </a>
             </div>
 
-            <div id="archiveStatus" style="margin-top: 10px; padding: 10px; display: none;"></div>
+            <div id="archiveStatus" class="u-mt-1" style="padding: 10px; display: none;"></div>
         </div>
     </div>
 
@@ -195,14 +242,15 @@
             if (data.is_archived) {
                 const btn = document.getElementById('acceptBillBtn');
                 btn.disabled = true;
-                btn.innerHTML = '<span class="btn__label">✓ Already Archived</span>';
-                btn.style.backgroundColor = '#28a745';
+                btn.innerHTML = '<span class="btn__label"><i data-lucide="check" class="btn__icon"></i> Already Archived</span>';
+                btn.classList.add('btn--success');
 
                 const status = document.getElementById('archiveStatus');
                 status.style.display = 'block';
-                status.style.backgroundColor = '#d4edda';
-                status.style.color = '#155724';
-                status.innerHTML = `✓ This bill has been accepted and archived as invoice ${data.invoice_number}`;
+                status.classList.add('alert', 'alert--success');
+                status.innerHTML = `<i data-lucide="check-circle" style="width: 16px; height: 16px; vertical-align: middle;"></i> This bill has been accepted and archived as invoice ${data.invoice_number}`;
+
+                lucide.createIcons();
             }
         })
         .catch(err => console.error('Error checking archive status:', err));
@@ -214,7 +262,8 @@
 
         const btn = this;
         btn.disabled = true;
-        btn.innerHTML = '<span class="btn__label">Processing...</span>';
+        btn.innerHTML = '<span class="btn__label"><i data-lucide="loader" class="btn__icon"></i> Processing...</span>';
+        lucide.createIcons();
 
         fetch('/api/bill/accept', {
             method: 'POST',
@@ -234,37 +283,36 @@
             statusDiv.style.display = 'block';
 
             if (status === 201) {
-                statusDiv.style.backgroundColor = '#d4edda';
-                statusDiv.style.color = '#155724';
-                statusDiv.innerHTML = `✓ Bill accepted and archived successfully! Invoice: ${body.invoice_number}`;
-                btn.innerHTML = '<span class="btn__label">✓ Already Archived</span>';
-                btn.style.backgroundColor = '#28a745';
+                statusDiv.className = 'alert alert--success u-mt-1';
+                statusDiv.innerHTML = `<i data-lucide="check-circle" style="width: 16px; height: 16px; vertical-align: middle;"></i> Bill accepted and archived successfully! Invoice: ${body.invoice_number}`;
+                btn.innerHTML = '<span class="btn__label"><i data-lucide="check" class="btn__icon"></i> Already Archived</span>';
+                btn.classList.add('btn--success');
             } else if (status === 409) {
-                statusDiv.style.backgroundColor = '#fff3cd';
-                statusDiv.style.color = '#856404';
-                statusDiv.innerHTML = `⚠️ ${body.error}`;
-                btn.innerHTML = '<span class="btn__label">✓ Already Archived</span>';
-                btn.style.backgroundColor = '#28a745';
+                statusDiv.className = 'alert alert--warning u-mt-1';
+                statusDiv.innerHTML = `<i data-lucide="alert-triangle" style="width: 16px; height: 16px; vertical-align: middle;"></i> ${body.error}`;
+                btn.innerHTML = '<span class="btn__label"><i data-lucide="check" class="btn__icon"></i> Already Archived</span>';
+                btn.classList.add('btn--success');
             } else {
-                statusDiv.style.backgroundColor = '#f8d7da';
-                statusDiv.style.color = '#721c24';
-                statusDiv.innerHTML = `✗ Error: ${body.error}`;
+                statusDiv.className = 'alert alert--error u-mt-1';
+                statusDiv.innerHTML = `<i data-lucide="alert-circle" style="width: 16px; height: 16px; vertical-align: middle;"></i> Error: ${body.error}`;
                 btn.disabled = false;
-                btn.innerHTML = '<span class="btn__label">Accept Bill & Archive</span>';
+                btn.innerHTML = '<span class="btn__label"><i data-lucide="check" class="btn__icon"></i> Accept Bill & Archive</span>';
             }
+            lucide.createIcons();
         })
         .catch(err => {
             const statusDiv = document.getElementById('archiveStatus');
             statusDiv.style.display = 'block';
-            statusDiv.style.backgroundColor = '#f8d7da';
-            statusDiv.style.color = '#721c24';
-            statusDiv.innerHTML = `✗ Error: ${err.message}`;
+            statusDiv.className = 'alert alert--error u-mt-1';
+            statusDiv.innerHTML = `<i data-lucide="alert-circle" style="width: 16px; height: 16px; vertical-align: middle;"></i> Error: ${err.message}`;
             btn.disabled = false;
-            btn.innerHTML = '<span class="btn__label">Accept Bill & Archive</span>';
+            btn.innerHTML = '<span class="btn__label"><i data-lucide="check" class="btn__icon"></i> Accept Bill & Archive</span>';
+            lucide.createIcons();
         });
     });
+
+    // Initialize Lucide icons
+    lucide.createIcons();
     </script>
-        </div>
-    </div>
 </body>
 </html>
