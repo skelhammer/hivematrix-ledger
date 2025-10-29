@@ -277,7 +277,15 @@
                 notes: notes || null
             })
         })
-        .then(response => response.json().then(data => ({status: response.status, body: data})))
+        .then(response => {
+            // Try to parse as JSON, but handle text responses too
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json().then(data => ({status: response.status, body: data}));
+            } else {
+                return response.text().then(text => ({status: response.status, body: {error: text}}));
+            }
+        })
         .then(({status, body}) => {
             const statusDiv = document.getElementById('archiveStatus');
             statusDiv.style.display = 'block';
