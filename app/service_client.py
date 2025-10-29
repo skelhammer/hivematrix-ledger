@@ -31,9 +31,15 @@ def call_service(service_name, path, method='GET', **kwargs):
         response = call_service('codex', '/api/companies/123/assets')
         data = response.json()
     """
+    # DEBUG: Print what we're trying to call
+    print(f"[DEBUG call_service] service_name='{service_name}', path='{path}'", flush=True)
+
     # Get the service URL from configuration
     services = current_app.config.get('SERVICES', {})
+    print(f"[DEBUG call_service] Available services: {list(services.keys())}", flush=True)
+
     if service_name not in services:
+        print(f"[DEBUG call_service] ERROR: '{service_name}' not in services!", flush=True)
         raise ValueError(f"Service '{service_name}' not found in configuration")
 
     service_url = services[service_name]['url']
