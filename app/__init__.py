@@ -39,6 +39,7 @@ try:
     with open('services.json') as f:
         services_config = json.load(f)
         app.config['SERVICES'] = services_config
+        print(f"✓ Loaded {len(services_config)} services: {', '.join(sorted(services_config.keys()))}")
 except FileNotFoundError:
     print("WARNING: services.json not found. Service-to-service calls will not work.")
     app.config['SERVICES'] = {}
