@@ -52,11 +52,17 @@
                             Export CSV
                         </span>
                     </button>
-                    {% if user.permission_level == 'admin' %}
+                    {% if user.permission_level in ['admin', 'billing'] %}
                     <button id="export-zip-btn" class="btn btn--primary">
                         <span class="btn__label">
                             <i data-lucide="archive" class="btn__icon"></i>
                             Export All Invoices (ZIP)
+                        </span>
+                    </button>
+                    <button id="accept-all-btn" class="btn btn--success">
+                        <span class="btn__label">
+                            <i data-lucide="check-circle" class="btn__icon"></i>
+                            Accept All Bills & Archive
                         </span>
                     </button>
                     {% endif %}
@@ -330,12 +336,65 @@
             document.body.removeChild(form);
         }
 
+        // Accept all bills function
+        async function acceptAllBills() {
+            if (!confirm('Are you sure you want to accept and archive ALL bills for the current period? This will process ' + filteredData.length + ' bills.')) {
+                return;
+            }
+
+            const btn = document.getElementById('accept-all-btn');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="btn__label"><i data-lucide="loader" class="btn__icon"></i> Processing...</span>';
+            lucide.createIcons();
+
+            let success = 0;
+            let failed = 0;
+            let alreadyArchived = 0;
+
+            for (const client of filteredData) {
+                try {
+                    const response = await fetch('/api/bill/accept', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            account_number: client.account_number,
+                            year: {{ current_year }},
+                            month: {{ current_month }},
+                            notes: 'Bulk accept from dashboard'
+                        })
+                    });
+
+                    if (response.status === 201) {
+                        success++;
+                    } else if (response.status === 409) {
+                        alreadyArchived++;
+                    } else {
+                        failed++;
+                    }
+                } catch (err) {
+                    failed++;
+                }
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            lucide.createIcons();
+
+            alert(`Accept All Complete:\n\n✓ ${success} bills archived\n⚠ ${alreadyArchived} already archived\n✗ ${failed} failed`);
+
+            // Refresh the data to show updated archive status
+            fetchBillingData();
+        }
+
         // Event listeners
         document.getElementById('search-box').addEventListener('input', filterData);
         document.getElementById('export-csv-btn').addEventListener('click', exportToCSV);
         document.getElementById('refresh-btn').addEventListener('click', fetchBillingData);
-        {% if user.permission_level == 'admin' %}
+        {% if user.permission_level in ['admin', 'billing'] %}
         document.getElementById('export-zip-btn').addEventListener('click', exportAllZIP);
+        document.getElementById('accept-all-btn').addEventListener('click', acceptAllBills);
         {% endif %}
 
         // Initial load
