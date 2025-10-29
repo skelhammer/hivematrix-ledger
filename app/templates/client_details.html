@@ -236,7 +236,7 @@
 
     <script>
     // Check if bill is already archived
-    fetch('/api/bill/check-archived/{{ account_number }}?year={{ year }}&month={{ month }}')
+    fetch('/ledger/api/bill/check-archived/{{ account_number }}?year={{ year }}&month={{ month }}')
         .then(response => response.json())
         .then(data => {
             if (data.is_archived) {
@@ -265,7 +265,7 @@
         btn.innerHTML = '<span class="btn__label"><i data-lucide="loader" class="btn__icon"></i> Processing...</span>';
         lucide.createIcons();
 
-        fetch('/api/bill/accept', {
+        fetch('/ledger/api/bill/accept', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
