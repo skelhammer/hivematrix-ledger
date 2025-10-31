@@ -3,9 +3,10 @@ from datetime import datetime, timezone, timedelta
 import calendar
 from extensions import db
 from models import (
-    BillingPlan, ClientBillingOverride, AssetBillingOverride, UserBillingOverride,
+    ClientBillingOverride, AssetBillingOverride, UserBillingOverride,
     ManualAsset, ManualUser, CustomLineItem, TicketDetail, ClientFeatureOverride
 )
+from app.codex_client import get_billing_plan_from_codex
 
 
 def get_billing_data_for_client(company_data, assets_data, users_data, year, month, tickets_data=None, plan_features_cache=None):
@@ -59,13 +60,30 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
     company_data['billing_plan'] = billing_plan_name
 
     contract_term = (company_data.get('contract_term_length') or '').strip()
-    plan_details = BillingPlan.query.filter_by(
-        billing_plan=billing_plan_name,
-        term_length=contract_term
-    ).first()
 
-    if not plan_details:
+    # Fetch plan details from Codex instead of local database
+    plan_details_dict = get_billing_plan_from_codex(billing_plan_name, contract_term)
+
+    if not plan_details_dict:
         return None
+
+    # Convert dict to object-like structure for compatibility
+    class PlanDetails:
+        def __init__(self, data):
+            self.support_level = data.get('support_level', 'Billed Hourly')
+            self.per_user_cost = data.get('per_user_cost', 0)
+            self.per_workstation_cost = data.get('per_workstation_cost', 0)
+            self.per_server_cost = data.get('per_server_cost', 0)
+            self.per_vm_cost = data.get('per_vm_cost', 0)
+            self.per_switch_cost = data.get('per_switch_cost', 0)
+            self.per_firewall_cost = data.get('per_firewall_cost', 0)
+            self.per_hour_ticket_cost = data.get('per_hour_ticket_cost', 0)
+            self.backup_base_fee_workstation = data.get('backup_base_fee_workstation', 0)
+            self.backup_base_fee_server = data.get('backup_base_fee_server', 0)
+            self.backup_included_tb = data.get('backup_included_tb', 1.0)
+            self.backup_per_tb_fee = data.get('backup_per_tb_fee', 0)
+
+    plan_details = PlanDetails(plan_details_dict)
 
     # Use provided tickets or fetch from Codex
     if tickets_data is None:

@@ -240,6 +240,25 @@ def get_all_billing_plans_bulk():
         return {}
 
 
+def get_all_feature_options():
+    """
+    Fetch all feature options from Codex.
+
+    Returns:
+        list: List of feature option dicts
+    """
+    try:
+        response = call_service('codex', '/api/feature-options')
+        if response.status_code == 200:
+            return response.json()
+        else:
+            current_app.logger.error(f"Failed to fetch feature options from Codex: HTTP {response.status_code}")
+            return []
+    except Exception as e:
+        current_app.logger.error(f"Error fetching feature options from Codex: {e}")
+        return []
+
+
 def get_billing_data_from_codex(account_number):
     """
     Fetch all necessary data from Codex for billing calculations.
