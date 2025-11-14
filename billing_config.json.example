@@ -45,12 +45,12 @@
     ],
     "default_users": [
         ["Admin", "Admin", "admin"],
-        ["Sample User", "Admin", "password"],
-        ["Jamie Lowe", "Contributor", "password"],
-        ["Jesse Bassett", "Contributor", "password"],
-        ["Matt Carter", "Admin", "password"],
-        ["Omar Flores-Lozano", "Editor", "password"],
-        ["Tasha Carter", "Contributor", "password"],
-        ["Troy Pound", "Admin", "password"]
+        ["User 1", "Admin", "password"],
+        ["User 2", "Contributor", "password"],
+        ["User 3", "Contributor", "password"],
+        ["User 4", "Admin", "password"],
+        ["User 5", "Editor", "password"],
+        ["User 6", "Contributor", "password"],
+        ["User 7", "Admin", "password"]
     ]
 }
