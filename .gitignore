@@ -139,3 +139,4 @@ cython_debug/
 .pdm-python
 .pdm-build/
 services.json
+billing_config.json
