@@ -73,26 +73,42 @@ def test_db_connection(creds):
 
 
 def create_sample_billing_plans():
-    """Creates comprehensive billing plans from billing_config.json."""
+    """
+    Creates comprehensive billing plans from billing_config.json if it exists.
+    Uses new dictionary format (matches Codex import/export).
+    If file doesn't exist, skips sample data creation.
+    """
     app, db = _import_app()
     from models import BillingPlan
     print("\n--- Creating Billing Plans ---")
 
-    # Load config from billing_config.json
+    # Check if config file exists
     config_path = os.path.join(os.path.dirname(__file__), 'billing_config.json')
+    if not os.path.exists(config_path):
+        print("  ℹ No billing_config.json found - skipping sample data")
+        print("  → Use Codex billing plan import to add plans after installation")
+        return
+
+    # Load config from billing_config.json
     with open(config_path, 'r') as f:
         config = json.load(f)
 
     created_count = 0
     existing_count = 0
 
-    # Plans data format: [plan_name, term_length, per_user, per_workstation, per_server, per_vm,
-    #                     per_switch, per_firewall, per_hour, backup_base_ws, backup_base_svr,
-    #                     backup_included_tb, backup_per_tb, support_level,
-    #                     antivirus, soc, password_mgr, sat, email_security, network_mgmt]
-    for plan_data in config['default_plans_data']:
-        plan_name = plan_data[0]
-        term_length = plan_data[1]
+    # Validate format
+    if 'plans' not in config:
+        print("  ✗ Invalid format: 'plans' key not found")
+        print("  → Expected new dictionary format (see billing_config.json.example)")
+        return
+
+    # Process plans
+    for plan_data in config['plans']:
+        plan_name = plan_data.get('plan_name')
+        term_length = plan_data.get('term_length')
+
+        if not plan_name or not term_length:
+            continue
 
         # Check if exists
         existing = BillingPlan.query.filter_by(
@@ -101,22 +117,21 @@ def create_sample_billing_plans():
         ).first()
 
         if not existing:
-            # Create new plan
             plan = BillingPlan(
                 billing_plan=plan_name,
                 term_length=term_length,
-                per_user_cost=plan_data[2],
-                per_workstation_cost=plan_data[3],
-                per_server_cost=plan_data[4],
-                per_vm_cost=plan_data[5],
-                per_switch_cost=plan_data[6],
-                per_firewall_cost=plan_data[7],
-                per_hour_ticket_cost=plan_data[8],
-                backup_base_fee_workstation=plan_data[9],
-                backup_base_fee_server=plan_data[10],
-                backup_included_tb=plan_data[11],
-                backup_per_tb_fee=plan_data[12],
-                support_level=plan_data[13]
+                per_user_cost=plan_data.get('per_user_cost', 0),
+                per_workstation_cost=plan_data.get('per_workstation_cost', 0),
+                per_server_cost=plan_data.get('per_server_cost', 0),
+                per_vm_cost=plan_data.get('per_vm_cost', 0),
+                per_switch_cost=plan_data.get('per_switch_cost', 0),
+                per_firewall_cost=plan_data.get('per_firewall_cost', 0),
+                per_hour_ticket_cost=plan_data.get('per_hour_ticket_cost', 0),
+                backup_base_fee_workstation=plan_data.get('backup_base_fee_workstation', 0),
+                backup_base_fee_server=plan_data.get('backup_base_fee_server', 0),
+                backup_included_tb=plan_data.get('backup_included_tb', 1.0),
+                backup_per_tb_fee=plan_data.get('backup_per_tb_fee', 0),
+                support_level=plan_data.get('support_level', 'Billed Hourly')
             )
             db.session.add(plan)
             created_count += 1
@@ -129,13 +144,23 @@ def create_sample_billing_plans():
 
 
 def create_feature_options():
-    """Creates feature options from billing_config.json."""
+    """
+    Creates feature options from billing_config.json if it exists.
+    Uses new dictionary format (matches Codex import/export).
+    If file doesn't exist, skips sample data creation.
+    """
     app, db = _import_app()
     from models import FeatureOption
     print("\n--- Creating Feature Options ---")
 
-    # Load config from billing_config.json
+    # Check if config file exists
     config_path = os.path.join(os.path.dirname(__file__), 'billing_config.json')
+    if not os.path.exists(config_path):
+        print("  ℹ No billing_config.json found - skipping sample data")
+        print("  → Use Codex billing plan import to add features after installation")
+        return
+
+    # Load config from billing_config.json
     with open(config_path, 'r') as f:
         config = json.load(f)
 
@@ -148,16 +173,28 @@ def create_feature_options():
         key = (feature.feature_type, feature.display_name)
         existing_features[key] = feature
 
-    for feature_data in config['default_features']:
-        feature_type = feature_data[0]
-        option = feature_data[1]
-        key = (feature_type, option)
+    # Validate format
+    if 'feature_options' not in config:
+        print("  ✗ Invalid format: 'feature_options' key not found")
+        print("  → Expected new dictionary format (see billing_config.json.example)")
+        return
+
+    # Process feature options
+    for feature_data in config['feature_options']:
+        feature_category = feature_data.get('feature_category')
+        option_value = feature_data.get('option_value')
+        display_name = feature_data.get('display_name', option_value)
+
+        if not feature_category or not option_value:
+            continue
+
+        key = (feature_category, display_name)
 
         if key not in existing_features:
             feature = FeatureOption(
-                feature_type=feature_type,
-                display_name=option,
-                description=f"{option} option for {feature_type.replace('_', ' ').title()}"
+                feature_type=feature_category,
+                display_name=display_name,
+                description=feature_data.get('description', f"{display_name} option for {feature_category.replace('_', ' ').title()}")
             )
             db.session.add(feature)
             created_count += 1
