@@ -45,7 +45,7 @@
     ],
     "default_users": [
         ["Admin", "Admin", "admin"],
-        ["David Hamner", "Admin", "password"],
+        ["Sample User", "Admin", "password"],
         ["Jamie Lowe", "Contributor", "password"],
         ["Jesse Bassett", "Contributor", "password"],
         ["Matt Carter", "Admin", "password"],
