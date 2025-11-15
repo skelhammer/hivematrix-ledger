@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Billing Dashboard - HiveMatrix Ledger</title>
+    <title>Clients - HiveMatrix Ledger</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         .sortable-header {
@@ -34,21 +34,31 @@
     {%- endmacro %}
     <div class="card">
         <div class="card__header">
-            <h1 class="card__title">Ledger - Billing & Contract Management</h1>
+            <h1 class="card__title">Clients</h1>
+            <div class="card__header-actions">
+                <button class="btn" onclick="window.location.href='/ledger/'">
+                    <span class="btn__label">
+                        <i data-lucide="arrow-left" class="btn__icon"></i>
+                        Back to Dashboard
+                    </span>
+                </button>
+            </div>
         </div>
         <div class="card__body">
-            <p class="u-mb-3">Track client billing, manage contracts, and monitor recurring revenue across all accounts.</p>
-            <p class="u-mb-1">Welcome, <strong>{{ user.name }}</strong> ({{ user.permission_level }})</p>
-            <p class="u-mb-2">Current billing period: <strong>{{ current_year }}-{{ "%02d"|format(current_month) }}</strong></p>
-
-            {% if user.permission_level == 'admin' %}
-            <div class="u-mb-2">
-                <a href="/ledger/admin/settings" class="btn btn--primary">
-                    <span class="btn__label">
-                        <i data-lucide="settings" class="btn__icon"></i>
-                        Admin Settings
-                    </span>
-                </a>
+            {% if filter_type %}
+            <div class="alert alert--info u-mb-2">
+                <p>
+                    <strong>Filter Active:</strong>
+                    {% if filter_type == 'active' %}Showing Active Contracts
+                    {% elif filter_type == 'expiring' %}Showing Contracts Expiring Soon (Next 30 Days)
+                    {% endif %}
+                    <button class="btn btn--small" onclick="window.location.href='/ledger/clients'" style="margin-left: 10px;">
+                        <span class="btn__label">
+                            <i data-lucide="x" class="btn__icon"></i>
+                            Clear Filter
+                        </span>
+                    </button>
+                </p>
             </div>
             {% endif %}
 
@@ -154,6 +164,27 @@
 
                     billingData = data.companies;
                     filteredData = [...billingData];
+
+                    // Apply filter if specified
+                    const filterType = '{{ filter_type }}';
+                    if (filterType === 'active') {
+                        // Show only contracts that are not expired
+                        filteredData = filteredData.filter(company => {
+                            const endDate = company.contract_end_date;
+                            if (!endDate || endDate === 'N/A' || endDate === 'Month to Month') return true;
+                            return new Date(endDate) >= new Date();
+                        });
+                    } else if (filterType === 'expiring') {
+                        // Show only contracts expiring in next 30 days
+                        const today = new Date();
+                        const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+                        filteredData = filteredData.filter(company => {
+                            const endDate = company.contract_end_date;
+                            if (!endDate || endDate === 'N/A' || endDate === 'Month to Month') return false;
+                            const contractEnd = new Date(endDate);
+                            return contractEnd >= today && contractEnd <= thirtyDaysFromNow;
+                        });
+                    }
 
                     // Sort alphabetically by name on initial load
                     sortColumn = 'name';

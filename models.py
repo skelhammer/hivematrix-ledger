@@ -1,33 +1,9 @@
 from extensions import db
 from sqlalchemy import BigInteger
 
-# Billing Plans - Base pricing structures
-class BillingPlan(db.Model):
-    __tablename__ = 'billing_plans'
-
-    id = db.Column(db.Integer, primary_key=True)
-    billing_plan = db.Column(db.String(100), nullable=False)
-    term_length = db.Column(db.String(50), nullable=False)  # 'Month to Month', '1-Year', '2-Year', '3-Year'
-    support_level = db.Column(db.String(100), nullable=False)  # 'Billed Hourly', 'All Inclusive', etc.
-
-    # Per-item costs
-    per_user_cost = db.Column(db.Numeric(10, 2), default=0.00)
-    per_workstation_cost = db.Column(db.Numeric(10, 2), default=0.00)
-    per_server_cost = db.Column(db.Numeric(10, 2), default=0.00)
-    per_vm_cost = db.Column(db.Numeric(10, 2), default=0.00)
-    per_switch_cost = db.Column(db.Numeric(10, 2), default=0.00)
-    per_firewall_cost = db.Column(db.Numeric(10, 2), default=0.00)
-    per_hour_ticket_cost = db.Column(db.Numeric(10, 2), default=0.00)
-
-    # Backup costs
-    backup_base_fee_workstation = db.Column(db.Numeric(10, 2), default=0.00)
-    backup_base_fee_server = db.Column(db.Numeric(10, 2), default=0.00)
-    backup_included_tb = db.Column(db.Numeric(10, 2), default=1.00)  # TB included per device
-    backup_per_tb_fee = db.Column(db.Numeric(10, 2), default=0.00)  # Cost per TB over included
-
-    # Unique constraint
-    __table_args__ = (db.UniqueConstraint('billing_plan', 'term_length', name='unique_plan_term'),)
-
+# NOTE: BillingPlan and FeatureOption models REMOVED
+# These are now fetched from Codex via API (see app/codex_client.py)
+# Ledger only stores local overrides and operational data
 
 # Client Billing Overrides - Per-client custom rates
 class ClientBillingOverride(db.Model):
@@ -172,18 +148,7 @@ class TicketDetail(db.Model):
     __table_args__ = (db.Index('idx_ticket_updated', 'last_updated_at'),)
 
 
-# Feature Options - Available features to override
-class FeatureOption(db.Model):
-    __tablename__ = 'feature_options'
-
-    id = db.Column(db.Integer, primary_key=True)
-    feature_type = db.Column(db.String(100), nullable=False)
-    display_name = db.Column(db.String(150), nullable=False)
-    description = db.Column(db.Text)
-
-    # Unique constraint on combination of feature_type + display_name
-    __table_args__ = (db.UniqueConstraint('feature_type', 'display_name', name='unique_feature_option'),)
-
+# NOTE: FeatureOption model REMOVED - now fetched from Codex via API
 
 # Client Feature Overrides - Custom feature pricing per client
 class ClientFeatureOverride(db.Model):

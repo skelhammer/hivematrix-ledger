@@ -22,9 +22,10 @@ def _import_app():
         from app import app as flask_app
         from extensions import db as database
         # Import ALL models so SQLAlchemy knows about them
+        # NOTE: BillingPlan and FeatureOption removed - now fetched from Codex via API
         from models import (
-            BillingPlan, ClientBillingOverride, AssetBillingOverride, UserBillingOverride,
-            ManualAsset, ManualUser, CustomLineItem, TicketDetail, FeatureOption, ClientFeatureOverride,
+            ClientBillingOverride, AssetBillingOverride, UserBillingOverride,
+            ManualAsset, ManualUser, CustomLineItem, TicketDetail, ClientFeatureOverride,
             SchedulerJob
         )
         app = flask_app
@@ -72,138 +73,9 @@ def test_db_connection(creds):
         return None, False
 
 
-def create_sample_billing_plans():
-    """
-    Creates comprehensive billing plans from billing_config.json if it exists.
-    Uses new dictionary format (matches Codex import/export).
-    If file doesn't exist, skips sample data creation.
-    """
-    app, db = _import_app()
-    from models import BillingPlan
-    print("\n--- Creating Billing Plans ---")
-
-    # Check if config file exists
-    config_path = os.path.join(os.path.dirname(__file__), 'billing_config.json')
-    if not os.path.exists(config_path):
-        print("  ℹ No billing_config.json found - skipping sample data")
-        print("  → Use Codex billing plan import to add plans after installation")
-        return
-
-    # Load config from billing_config.json
-    with open(config_path, 'r') as f:
-        config = json.load(f)
-
-    created_count = 0
-    existing_count = 0
-
-    # Validate format
-    if 'plans' not in config:
-        print("  ✗ Invalid format: 'plans' key not found")
-        print("  → Expected new dictionary format (see billing_config.json.example)")
-        return
-
-    # Process plans
-    for plan_data in config['plans']:
-        plan_name = plan_data.get('plan_name')
-        term_length = plan_data.get('term_length')
-
-        if not plan_name or not term_length:
-            continue
-
-        # Check if exists
-        existing = BillingPlan.query.filter_by(
-            billing_plan=plan_name,
-            term_length=term_length
-        ).first()
-
-        if not existing:
-            plan = BillingPlan(
-                billing_plan=plan_name,
-                term_length=term_length,
-                per_user_cost=plan_data.get('per_user_cost', 0),
-                per_workstation_cost=plan_data.get('per_workstation_cost', 0),
-                per_server_cost=plan_data.get('per_server_cost', 0),
-                per_vm_cost=plan_data.get('per_vm_cost', 0),
-                per_switch_cost=plan_data.get('per_switch_cost', 0),
-                per_firewall_cost=plan_data.get('per_firewall_cost', 0),
-                per_hour_ticket_cost=plan_data.get('per_hour_ticket_cost', 0),
-                backup_base_fee_workstation=plan_data.get('backup_base_fee_workstation', 0),
-                backup_base_fee_server=plan_data.get('backup_base_fee_server', 0),
-                backup_included_tb=plan_data.get('backup_included_tb', 1.0),
-                backup_per_tb_fee=plan_data.get('backup_per_tb_fee', 0),
-                support_level=plan_data.get('support_level', 'Billed Hourly')
-            )
-            db.session.add(plan)
-            created_count += 1
-        else:
-            existing_count += 1
-
-    db.session.commit()
-    print(f"  ✓ Created {created_count} plans, {existing_count} already existed")
-    print("✓ Billing plans setup complete!")
-
-
-def create_feature_options():
-    """
-    Creates feature options from billing_config.json if it exists.
-    Uses new dictionary format (matches Codex import/export).
-    If file doesn't exist, skips sample data creation.
-    """
-    app, db = _import_app()
-    from models import FeatureOption
-    print("\n--- Creating Feature Options ---")
-
-    # Check if config file exists
-    config_path = os.path.join(os.path.dirname(__file__), 'billing_config.json')
-    if not os.path.exists(config_path):
-        print("  ℹ No billing_config.json found - skipping sample data")
-        print("  → Use Codex billing plan import to add features after installation")
-        return
-
-    # Load config from billing_config.json
-    with open(config_path, 'r') as f:
-        config = json.load(f)
-
-    created_count = 0
-    existing_count = 0
-
-    # Fetch all existing features first to avoid autoflush issues
-    existing_features = {}
-    for feature in FeatureOption.query.all():
-        key = (feature.feature_type, feature.display_name)
-        existing_features[key] = feature
-
-    # Validate format
-    if 'feature_options' not in config:
-        print("  ✗ Invalid format: 'feature_options' key not found")
-        print("  → Expected new dictionary format (see billing_config.json.example)")
-        return
-
-    # Process feature options
-    for feature_data in config['feature_options']:
-        feature_category = feature_data.get('feature_category')
-        option_value = feature_data.get('option_value')
-        display_name = feature_data.get('display_name', option_value)
-
-        if not feature_category or not option_value:
-            continue
-
-        key = (feature_category, display_name)
-
-        if key not in existing_features:
-            feature = FeatureOption(
-                feature_type=feature_category,
-                display_name=display_name,
-                description=feature_data.get('description', f"{display_name} option for {feature_category.replace('_', ' ').title()}")
-            )
-            db.session.add(feature)
-            created_count += 1
-        else:
-            existing_count += 1
-
-    db.session.commit()
-    print(f"  ✓ Created {created_count} feature options, {existing_count} already existed")
-    print("✓ Feature options setup complete!")
+# NOTE: Billing plan and feature creation functions REMOVED
+# These are now managed in Codex only. Ledger fetches them via API.
+# See app/codex_client.py for billing plan API integration
 
 
 def create_sample_scheduler_jobs():
@@ -299,11 +171,10 @@ def init_db_headless(db_host, db_port, db_name, db_user, db_password, migrate_on
         print("✓ Database schema initialized successfully!")
 
         if create_sample_data:
-            print("\n→ Creating sample billing plans and features...")
-            create_sample_billing_plans()
-            create_feature_options()
+            print("\n→ Creating sample scheduler jobs...")
             create_sample_scheduler_jobs()
             print("✓ Sample data created")
+            print("\nℹ Billing plans are managed in Codex - import them there if needed")
 
     print("\n" + "="*80)
     print(" ✓ Ledger Initialization Complete!")
@@ -365,15 +236,12 @@ def init_db():
         db.create_all()
         print("✓ Database schema initialized successfully!")
 
-        # Create sample data
-        create_sample = input("\nCreate billing plans and features? (y/n): ").lower() == 'y'
-        if create_sample:
-            create_sample_billing_plans()
-            create_feature_options()
-
+        # Create sample scheduler jobs
         create_jobs = input("\nCreate scheduler jobs? (y/n): ").lower() == 'y'
         if create_jobs:
             create_sample_scheduler_jobs()
+
+        print("\nℹ Billing plans are managed in Codex - import them there if needed")
 
     print("\n" + "="*50)
     print("✓ HiveMatrix Ledger Database Initialization Complete!")

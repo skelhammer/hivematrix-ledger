@@ -139,31 +139,49 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
 
     support_level_display = effective_rates.get('support_level', 'Billed Hourly')
 
-    # --- Calculate Contract End Date ---
+    # --- Get Contract End Date from Codex (source of truth) ---
     contract_end_date = "N/A"
     contract_expired = False
-    if company_data.get('contract_start_date') and company_data.get('contract_term_length'):
+
+    # Use contract_end_date from Codex if available
+    if company_data.get('contract_end_date'):
+        contract_end_date = company_data['contract_end_date']
+        # Check if contract is expired
+        try:
+            end_date = datetime.fromisoformat(contract_end_date.split('T')[0])
+            if datetime.now().date() > end_date.date():
+                contract_expired = True
+        except (ValueError, TypeError):
+            pass
+    elif company_data.get('contract_term_length') == 'Month to Month':
+        contract_end_date = "Month to Month"
+    # Fallback: calculate if we have start date and term but no end date from Codex
+    elif company_data.get('contract_start_date') and company_data.get('contract_term_length'):
         try:
             start_date_str = str(company_data['contract_start_date']).split('T')[0]
             start_date = datetime.fromisoformat(start_date_str)
             term = company_data['contract_term_length']
 
-            years_to_add = {'1-Year': 1, '2-Year': 2, '3-Year': 3}.get(term, 0)
+            years_to_add = {'1 Year': 1, '2 Year': 2, '3 Year': 3}.get(term, 0)
             if years_to_add > 0:
                 end_date = start_date.replace(year=start_date.year + years_to_add) - timedelta(days=1)
                 contract_end_date = end_date.strftime('%Y-%m-%d')
                 if datetime.now().date() > end_date.date():
                     contract_expired = True
-            elif term == 'Month to Month':
-                contract_end_date = "Month to Month"
         except (ValueError, TypeError):
             contract_end_date = "Invalid Start Date"
 
     # --- Fetch Plan Features from Cache ---
+    plan_data = {}
     plan_features = {}
+    feature_display_names = {}
     if plan_features_cache and billing_plan_name and contract_term:
         cache_key = f"{billing_plan_name}|{contract_term}"
-        plan_features = plan_features_cache.get(cache_key, {})
+        plan_data = plan_features_cache.get(cache_key, {})
+        # Features are nested under 'features' key in the plan data
+        plan_features = plan_data.get('features', {})
+        # Get feature display names from plan data (provided by Codex API)
+        feature_display_names = plan_data.get('feature_display_names', {})
 
     # Check for feature overrides from Ledger database
     feature_overrides = ClientFeatureOverride.query.filter_by(
@@ -401,6 +419,7 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
         'effective_rates': effective_rates,
         'effective_features': effective_features,
         'plan_features': effective_features,  # Alias for template compatibility
+        'feature_display_names': feature_display_names,  # Display names for features (SOC, SAT, etc.)
         'feature_override_status': feature_override_status,
         'quantities': dict(quantities),
         'backup_info': backup_info,
