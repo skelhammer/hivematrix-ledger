@@ -19,78 +19,39 @@
             </div>
         </div>
         <div class="card__body">
-            <p><strong>Account Number:</strong> {{ account_number }}</p>
-            <p><strong>Billing Period:</strong> {{ year }}-{{ "%02d"|format(month) }}</p>
-            <p><strong>Billing Plan:</strong> {{ data.client.billing_plan or 'N/A' }}</p>
-            <p><strong>Contract Term:</strong> {{ data.client.contract_term_length or 'N/A' }}</p>
-            <p><strong>Support Level:</strong> {{ data.support_level_display }}</p>
-            {% if data.client.contract_start_date %}
-            <p><strong>Contract Start:</strong> {{ data.client.contract_start_date }}</p>
-            {% endif %}
-            <p><strong>Contract End:</strong> {{ data.contract_end_date }}</p>
-            {% if data.contract_expired %}
-            <p class="u-text-danger u-font-bold">
-                <i data-lucide="alert-triangle" style="width: 16px; height: 16px; vertical-align: middle;"></i>
-                Contract Expired
-            </p>
-            {% endif %}
-        </div>
-    </div>
-
-    {% if data.plan_features %}
-    <div class="card u-mt-2">
-        <div class="card__header">
-            <h2 class="card__title">Plan Features & Inclusions</h2>
-        </div>
-        <div class="card__body">
-            <p class="u-mb-2"><em>Features included with {{ data.client.billing_plan or 'your plan' }}:</em></p>
-            <div class="table-wrapper">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Feature</th>
-                            <th>Included Solution</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for feature, value in data.plan_features.items() %}
-                        {% if value and value != 'Not Included' %}
-                        <tr>
-                            <td><strong>{{ feature.replace('_', ' ').title() }}</strong></td>
-                            <td>{{ value }}</td>
-                            <td>
-                                {% if data.feature_override_status.get(feature, False) %}
-                                    <span class="u-text-warning">
-                                        <i data-lucide="alert-triangle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
-                                        Customized
-                                    </span>
-                                {% else %}
-                                    <span class="u-text-success">
-                                        <i data-lucide="check" style="width: 14px; height: 14px; vertical-align: middle;"></i>
-                                        From Plan
-                                    </span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endif %}
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="info-grid">
+                <div>
+                    <p><strong>Account Number:</strong> {{ account_number }}</p>
+                    <p><strong>Billing Period:</strong> {{ year }}-{{ "%02d"|format(month) }}</p>
+                    <p><strong>Billing Plan:</strong> {{ data.client.billing_plan or 'N/A' }}</p>
+                    <p><strong>Contract Term:</strong> {{ data.client.contract_term_length or 'N/A' }}</p>
+                    <p><strong>Support Level:</strong> {{ data.support_level_display }}</p>
+                    {% if data.client.contract_start_date %}
+                    <p><strong>Contract Start:</strong> {{ data.client.contract_start_date.split('T')[0] if 'T' in data.client.contract_start_date else data.client.contract_start_date }}</p>
+                    {% endif %}
+                    <p><strong>Contract End:</strong> {{ data.contract_end_date }}</p>
+                    {% if data.contract_expired %}
+                    <p class="u-text-danger u-font-bold">
+                        <i data-lucide="alert-triangle" style="width: 16px; height: 16px; vertical-align: middle;"></i>
+                        Contract Expired
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    {% if data.plan_features %}
+                    <p class="u-mb-1"><strong>Plan Features:</strong></p>
+                    <!-- Debug: {{ data.feature_display_names }} -->
+                    {% for feature, value in data.plan_features.items() %}
+                    {% if value and value != 'Not Included' %}
+                    {% set display_name = data.feature_display_names.get(feature) if data.feature_display_names else None %}
+                    <p><strong>{{ display_name if display_name else feature.replace('_', ' ').title() }}:</strong> {{ value }}</p>
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                </div>
             </div>
-            <p class="u-mt-1 u-text-small u-text-secondary">
-                <strong>
-                    <i data-lucide="alert-triangle" style="width: 12px; height: 12px; vertical-align: middle;"></i>
-                    Customized
-                </strong> = Override configured in Ledger (differs from Codex plan default)<br>
-                <strong>
-                    <i data-lucide="check" style="width: 12px; height: 12px; vertical-align: middle;"></i>
-                    From Plan
-                </strong> = Standard feature from billing plan in Codex
-            </p>
         </div>
     </div>
-    {% endif %}
 
     <div class="card u-mt-2">
         <div class="card__header">

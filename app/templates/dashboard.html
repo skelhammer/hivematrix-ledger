@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ledger Dashboard</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="card">
+        <div class="card__header">
+            <h1 class="card__title">Ledger - Billing & Contract Management</h1>
+        </div>
+        <div class="card__body">
+            <p class="u-mb-3">Track client billing, manage contracts, and monitor recurring revenue across all accounts.</p>
+            <div class="dashboard-grid dashboard-grid--three-col">
+                <a href="/ledger/clients" class="dashboard-card">
+                    <div class="dashboard-card__icon">
+                        <i data-lucide="building-2"></i>
+                    </div>
+                    <div class="dashboard-card__content">
+                        <h2 class="dashboard-card__title">Total Clients</h2>
+                        <p class="dashboard-card__count" id="total-clients-count">Loading...</p>
+                    </div>
+                </a>
+
+                <a href="/ledger/clients" class="dashboard-card">
+                    <div class="dashboard-card__icon">
+                        <i data-lucide="dollar-sign"></i>
+                    </div>
+                    <div class="dashboard-card__content">
+                        <h2 class="dashboard-card__title">Monthly Revenue</h2>
+                        <p class="dashboard-card__count" id="monthly-revenue">Loading...</p>
+                    </div>
+                </a>
+
+                <a href="/ledger/clients?filter=active" class="dashboard-card">
+                    <div class="dashboard-card__icon">
+                        <i data-lucide="file-check"></i>
+                    </div>
+                    <div class="dashboard-card__content">
+                        <h2 class="dashboard-card__title">Active Contracts</h2>
+                        <p class="dashboard-card__count" id="active-contracts-count">Loading...</p>
+                    </div>
+                </a>
+
+                <a href="/ledger/clients?filter=expiring" class="dashboard-card">
+                    <div class="dashboard-card__icon">
+                        <i data-lucide="alert-triangle"></i>
+                    </div>
+                    <div class="dashboard-card__content">
+                        <h2 class="dashboard-card__title">Expiring Soon</h2>
+                        <p class="dashboard-card__count" id="expiring-soon-count">Loading...</p>
+                    </div>
+                </a>
+
+                {% if user.permission_level == 'admin' %}
+                <a href="/ledger/admin/settings" class="dashboard-card">
+                    <div class="dashboard-card__icon">
+                        <i data-lucide="settings"></i>
+                    </div>
+                    <div class="dashboard-card__content">
+                        <h2 class="dashboard-card__title">Admin Settings</h2>
+                    </div>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadDashboardMetrics() {
+            try {
+                const response = await fetch('/ledger/api/billing/dashboard?year={{ current_year }}&month={{ current_month }}', {
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok && response.status === 401) {
+                    window.location.href = '/ledger/login';
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.error || data.warning || !data.companies) {
+                    // Show zeros if there's an error
+                    document.getElementById('total-clients-count').textContent = '0';
+                    document.getElementById('monthly-revenue').textContent = '$0.00';
+                    document.getElementById('active-contracts-count').textContent = '0';
+                    document.getElementById('expiring-soon-count').textContent = '0';
+                    return;
+                }
+
+                const companies = data.companies;
+
+                // Calculate metrics
+                const totalClients = companies.length;
+
+                // Calculate monthly revenue (sum of all total_bill values)
+                const monthlyRevenue = companies.reduce((sum, company) => {
+                    return sum + (parseFloat(company.total_bill) || 0);
+                }, 0);
+
+                // Count active contracts (not expired)
+                const today = new Date();
+                const activeContracts = companies.filter(company => {
+                    const endDate = company.contract_end_date;
+                    if (!endDate || endDate === 'N/A' || endDate === 'Month to Month') return true;
+                    return new Date(endDate) >= today;
+                }).length;
+
+                // Count expiring soon (within 30 days)
+                const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+                const expiringSoon = companies.filter(company => {
+                    const endDate = company.contract_end_date;
+                    if (!endDate || endDate === 'N/A' || endDate === 'Month to Month') return false;
+                    const contractEnd = new Date(endDate);
+                    return contractEnd >= today && contractEnd <= thirtyDaysFromNow;
+                }).length;
+
+                // Update the dashboard cards
+                document.getElementById('total-clients-count').textContent = totalClients;
+                document.getElementById('monthly-revenue').textContent = '$' + monthlyRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('active-contracts-count').textContent = activeContracts;
+                document.getElementById('expiring-soon-count').textContent = expiringSoon;
+
+            } catch (error) {
+                console.error('Error loading dashboard metrics:', error);
+                document.getElementById('total-clients-count').textContent = 'Error';
+                document.getElementById('monthly-revenue').textContent = 'Error';
+                document.getElementById('active-contracts-count').textContent = 'Error';
+                document.getElementById('expiring-soon-count').textContent = 'Error';
+            }
+        }
+
+        // Load metrics and initialize Lucide icons
+        window.addEventListener('DOMContentLoaded', () => {
+            loadDashboardMetrics();
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>

@@ -6,7 +6,8 @@ from app.billing_engine import get_billing_data_for_client
 from app.invoice_generator import generate_invoice_csv, generate_bulk_invoices_zip, get_invoice_summary
 from app.archive_client import send_to_archive, check_if_archived
 from datetime import datetime, timedelta
-from models import BillingPlan, ClientBillingOverride, ManualAsset, ManualUser, CustomLineItem, AssetBillingOverride, UserBillingOverride, TicketDetail, ClientFeatureOverride
+from models import ClientBillingOverride, ManualAsset, ManualUser, CustomLineItem, AssetBillingOverride, UserBillingOverride, TicketDetail, ClientFeatureOverride
+from app.codex_client import CodexBillingClient
 from extensions import db
 import io
 import csv
@@ -16,7 +17,7 @@ import zipfile
 @app.route('/')
 @billing_required
 def index():
-    """Billing dashboard - shows all clients with their billing data."""
+    """Dashboard with metrics and quick actions."""
     # Prevent service calls from accessing UI routes
     if g.is_service_call:
         return {'error': 'This endpoint is for users only'}, 403
@@ -24,10 +25,31 @@ def index():
     user = g.user
     today = datetime.now()
 
-    return render_template('index.html',
+    # Dashboard will load metrics via API
+    return render_template('dashboard.html',
         user=user,
         current_year=today.year,
         current_month=today.month
+    )
+
+
+@app.route('/clients')
+@billing_required
+def clients_list():
+    """Client list with billing data - supports filtering."""
+    # Prevent service calls from accessing UI routes
+    if g.is_service_call:
+        return {'error': 'This endpoint is for users only'}, 403
+
+    user = g.user
+    today = datetime.now()
+    filter_type = request.args.get('filter', None)
+
+    return render_template('clients.html',
+        user=user,
+        current_year=today.year,
+        current_month=today.month,
+        filter_type=filter_type
     )
 
 
@@ -296,18 +318,16 @@ def client_settings(account_number):
     manual_users = ManualUser.query.filter_by(company_account_number=account_number).all()
     custom_items = CustomLineItem.query.filter_by(company_account_number=account_number).all()
 
-    # Get default plan rates for display
+    # Get default plan rates for display from Codex
     billing_plan_name = codex_data['company'].get('billing_plan') or ''
     contract_term = codex_data['company'].get('contract_term_length') or 'Month to Month'
-    defaults = BillingPlan.query.filter_by(
-        billing_plan=billing_plan_name,
-        term_length=contract_term
-    ).first()
+    defaults = CodexBillingClient.get_plan(billing_plan_name, contract_term) if billing_plan_name else None
 
-    # Get available billing plans
-    billing_plans = BillingPlan.query.with_entities(
-        BillingPlan.billing_plan, BillingPlan.term_length
-    ).distinct().all()
+    # Get available billing plans from Codex
+    all_plans = CodexBillingClient.get_all_plans()
+    # Create a list of unique plan names for the dropdown
+    unique_plan_names = sorted(set(p['plan_name'] for p in all_plans))
+    billing_plans = [{'billing_plan': name} for name in unique_plan_names]
 
     # Get asset/user overrides
     asset_overrides = {o.asset_id: o for o in AssetBillingOverride.query.all()}
@@ -317,7 +337,9 @@ def client_settings(account_number):
     from app.codex_client import get_all_billing_plans_bulk
     plan_features_cache = get_all_billing_plans_bulk()
     cache_key = f"{billing_plan_name}|{contract_term}"
-    plan_defaults = plan_features_cache.get(cache_key, {})
+    plan_data = plan_features_cache.get(cache_key, {})
+    # Extract features from nested structure for template compatibility
+    plan_defaults = plan_data.get('features', {})
 
     # Get feature overrides from Ledger
     feature_overrides_list = ClientFeatureOverride.query.filter_by(
@@ -699,16 +721,16 @@ def api_billing_dashboard():
 @app.route('/api/plans')
 @token_required
 def api_plans():
-    """API endpoint to list all billing plans."""
-    plans = BillingPlan.query.all()
+    """API endpoint to list all billing plans from Codex."""
+    plans = CodexBillingClient.get_all_plans()
     return jsonify([{
-        'id': p.id,
-        'billing_plan': p.billing_plan,
-        'term_length': p.term_length,
-        'support_level': p.support_level,
-        'per_user_cost': float(p.per_user_cost or 0),
-        'per_workstation_cost': float(p.per_workstation_cost or 0),
-        'per_server_cost': float(p.per_server_cost or 0),
+        'id': p.get('id'),
+        'billing_plan': p['plan_name'],
+        'term_length': p['term_length'],
+        'support_level': p.get('support_level', 'Billed Hourly'),
+        'per_user_cost': p.get('per_user_cost', 0),
+        'per_workstation_cost': p.get('per_workstation_cost', 0),
+        'per_server_cost': p.get('per_server_cost', 0),
     } for p in plans])
 
 
