@@ -1,22 +1,63 @@
 # HiveMatrix Ledger
 
-Billing calculation and invoicing platform for MSP customer billing.
+Billing calculation and invoicing engine for MSP customer billing.
 
-Ledger calculates customer bills based on:
-- **Per-unit pricing** (per-user, per-server, per-workstation rates)
-- **Billing plans** with different service tiers
-- **Line items** for additional services
-- **Asset counts** from Codex integration
-- **Custom overrides** for special pricing
+## Overview
 
-Not a blockchain - it's an accounting ledger for MSP billing!
+Ledger calculates customer bills based on per-unit pricing, billing plans, and asset counts from Codex. It supports custom rate overrides and recurring line items for flexible billing.
+
+**Port:** 5030
+
+## Features
+
+- **Per-Unit Pricing** - Rates for users, servers, workstations, VMs
+- **Billing Plans** - Tiered service plans with default rates
+- **Rate Overrides** - Custom pricing per customer
+- **Line Items** - Additional monthly charges
+- **Contract Terms** - Month-to-month, 1/2/3 year terms
+- **Invoice Generation** - Detailed billing breakdowns
+
+## Tech Stack
+
+- Flask + Gunicorn
+- PostgreSQL
+- SQLAlchemy ORM
+
+## Key Endpoints
+
+- `GET /api/billing/<account>` - Get billing for account
+- `GET /api/plans` - List available billing plans
+- `GET /api/overrides/client/<account>` - Get rate overrides
+- `PUT /api/overrides/client/<account>` - Set rate overrides
+- `POST /api/overrides/line-items/<account>` - Add line item
+
+## Billing Calculation
+
+```
+Total = User Charges + Asset Charges + Line Items - Prepaid Credits
+```
+
+Asset charges include:
+- Workstations, Servers, VMs
+- Switches, Firewalls
+- Backup storage
+
+## Environment Variables
+
+- `CORE_SERVICE_URL` - Core service URL
+- `CODEX_SERVICE_URL` - Codex service URL
+
+## Dependencies
+
+Ledger requires:
+- **Codex** - For company and asset counts
 
 ## Documentation
 
-For installation, configuration, and architecture documentation, please visit:
+For complete installation, configuration, and architecture documentation:
 
-**[HiveMatrix Documentation](https://skelhammer.github.io/hivematrix-docs/ARCHITECTURE/)**
+**[HiveMatrix Documentation](https://skelhammer.github.io/hivematrix-docs/)**
 
-## Quick Start
+## License
 
-This service is installed and managed by HiveMatrix Helm. See the documentation link above for setup instructions.
+MIT License - See LICENSE file
