@@ -5,6 +5,11 @@ import secrets
 
 app = Flask(__name__, instance_relative_config=True)
 
+# Configure logging level from environment
+import logging
+log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
+app.logger.setLevel(getattr(logging, log_level, logging.INFO))
+
 # Set secret key for sessions (generate a random one if not set)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 
