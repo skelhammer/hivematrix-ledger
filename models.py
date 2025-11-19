@@ -88,7 +88,7 @@ class ManualAsset(db.Model):
     __tablename__ = 'manual_assets'
 
     id = db.Column(db.Integer, primary_key=True)
-    company_account_number = db.Column(db.String(50), nullable=False)
+    company_account_number = db.Column(db.String(50), nullable=False, index=True)
     hostname = db.Column(db.String(150), nullable=False)
     billing_type = db.Column(db.String(50), nullable=False)  # 'Workstation', 'Server', etc.
     custom_cost = db.Column(db.Numeric(10, 2))  # If billing_type is 'Custom'
@@ -100,7 +100,7 @@ class ManualUser(db.Model):
     __tablename__ = 'manual_users'
 
     id = db.Column(db.Integer, primary_key=True)
-    company_account_number = db.Column(db.String(50), nullable=False)
+    company_account_number = db.Column(db.String(50), nullable=False, index=True)
     full_name = db.Column(db.String(150), nullable=False)
     billing_type = db.Column(db.String(50), nullable=False)  # 'Paid', 'Free', 'Custom'
     custom_cost = db.Column(db.Numeric(10, 2))  # If billing_type is 'Custom'
@@ -112,7 +112,7 @@ class CustomLineItem(db.Model):
     __tablename__ = 'custom_line_items'
 
     id = db.Column(db.Integer, primary_key=True)
-    company_account_number = db.Column(db.String(50), nullable=False)
+    company_account_number = db.Column(db.String(50), nullable=False, index=True)
     name = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text)
 
