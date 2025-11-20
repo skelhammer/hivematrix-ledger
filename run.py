@@ -25,7 +25,10 @@ if __name__ == "__main__":
         for js_file in static_dir.rglob('*.js'):
             extra_files.append(str(js_file))
 
+    # Security: Bind to localhost only - Ledger should not be exposed externally
+    # Access via Nexus proxy at https://localhost:443/ledger
     app.run(
+        host='127.0.0.1',
         port=5030,
         debug=True,
         extra_files=extra_files
