@@ -249,7 +249,7 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
     total_user_charges = 0.0
 
     for user in all_users:
-        is_manual = 'freshservice_id' not in user and 'email' not in user
+        is_manual = 'external_id' not in user and 'email' not in user
         override = user_overrides.get(user.get('id')) if not is_manual else None
 
         if is_manual:

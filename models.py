@@ -95,7 +95,7 @@ class ManualAsset(db.Model):
     notes = db.Column(db.Text)
 
 
-# Manual Users - Users added manually (not from Codex/Freshservice)
+# Manual Users - Users added manually (not from Codex/PSA)
 class ManualUser(db.Model):
     __tablename__ = 'manual_users'
 
