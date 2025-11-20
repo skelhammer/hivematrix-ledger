@@ -4,15 +4,15 @@
 
 **Ledger is a billing service that pulls all data from Codex via API.**
 
-Ledger does NOT sync directly from external services (Freshservice, Datto RMM). All data syncing is centralized in the Codex service.
+Ledger does NOT sync directly from external services (PSA systems, Datto RMM). All data syncing is centralized in the Codex service.
 
 ## Architecture
 
 ```
-External Services (Freshservice, Datto)
+External Services (PSA Systems, Datto)
     ↓
 Codex (Central Data Hub)
-    - Syncs from Freshservice (companies, contacts, tickets)
+    - Syncs from PSA (companies, contacts, tickets)
     - Syncs from Datto RMM (assets, backup data)
     - Provides API endpoints for other services
     ↓
@@ -25,7 +25,7 @@ Ledger (Billing Service)
 ## Data Flow
 
 1. **Codex Admin** triggers syncs from Codex dashboard:
-   - Sync Freshservice → Companies, Contacts
+   - Sync PSA → Companies, Contacts
    - Sync Datto RMM → Assets, Backup Data
    - Sync Tickets → Billing Hours
 
@@ -41,10 +41,10 @@ Ledger (Billing Service)
 
 ## Deprecated Scripts
 
-The following scripts are DEPRECATED and should NOT be used:
+The following scripts have been REMOVED:
 
-- ❌ `sync_tickets_from_freshservice.py.deprecated` - Use Codex ticket sync instead
-- ❌ `sync_backup_data_from_datto.py.deprecated` - Use Codex Datto sync instead
+- ❌ Old ticket sync scripts - Use Codex's `sync_psa.py --type tickets` instead
+- ❌ Old backup sync scripts - Use Codex's `pull_datto.py` instead
 
 ## Active Sync Script
 
@@ -54,10 +54,10 @@ The following scripts are DEPRECATED and should NOT be used:
 
 ### Via Codex Dashboard (Recommended)
 
-1. Log into Codex as admin: `http://localhost:5001`
+1. Log into Codex as admin: `http://localhost:5010`
 2. Navigate to "Data Sync Center" section
 3. Click sync buttons in order:
-   - **Sync Freshservice** (companies & contacts)
+   - **Sync PSA** (companies & contacts)
    - **Sync Datto RMM** (assets & backup)
    - **Sync Tickets** (billing hours - may take hours)
 
@@ -66,14 +66,11 @@ The following scripts are DEPRECATED and should NOT be used:
 ```bash
 cd /path/to/hivematrix-codex
 
-# Sync companies and contacts from Freshservice
-python pull_freshservice.py
+# Sync companies, contacts, and tickets from PSA
+python sync_psa.py --type all
 
 # Sync assets and backup data from Datto RMM
 python pull_datto.py
-
-# Sync tickets for billing hours
-python sync_tickets_from_freshservice.py
 ```
 
 ## Troubleshooting
@@ -111,4 +108,4 @@ Ledger only needs to know where Codex is:
 }
 ```
 
-All external service credentials (Freshservice, Datto) are configured in **Codex**, not Ledger.
+All external service credentials (PSA systems, Datto) are configured in **Codex**, not Ledger.
