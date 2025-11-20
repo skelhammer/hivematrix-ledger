@@ -191,5 +191,7 @@ def check_if_archived(invoice_number):
     try:
         response = call_service('archive', f'/api/snapshot/{invoice_number}', method='GET')
         return response.status_code == 200
-    except:
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).debug(f"Could not check archive status: {e}")
         return False
