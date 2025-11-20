@@ -70,6 +70,22 @@ if [ ! -d "instance" ]; then
     echo ""
 fi
 
+# Create default database config if it doesn't exist
+if [ ! -f "instance/ledger.conf" ]; then
+    echo -e "${YELLOW}Creating default database config...${NC}"
+    cat > instance/ledger.conf <<EOF
+[database]
+connection_string = postgresql://ledger_user:CHANGE_ME@localhost:5432/ledger_db
+db_host = localhost
+db_port = 5432
+db_name = ledger_db
+db_user = ledger_user
+EOF
+    echo -e "${GREEN}✓ Database config created${NC}"
+    echo -e "${YELLOW}  (Update instance/ledger.conf with your database credentials)${NC}"
+    echo ""
+fi
+
 # Create export directories
 echo -e "${YELLOW}Creating export directories...${NC}"
 mkdir -p exports/{quickbooks,csv,zip}
