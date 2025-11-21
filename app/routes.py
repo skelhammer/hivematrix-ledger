@@ -1,5 +1,5 @@
 from flask import render_template, g, jsonify, request, redirect, url_for, flash, Response, send_file
-from app import app
+from app import app, limiter
 from app.auth import token_required, billing_required, admin_required
 from app.codex_client import get_all_companies, get_all_companies_with_details, get_billing_data_from_codex
 from app.billing_engine import get_billing_data_for_client
@@ -935,6 +935,7 @@ def export_all_bills_zip():
     )
 
 @app.route('/health', methods=['GET'])
+@limiter.exempt
 def health_check():
     """Health check endpoint for monitoring"""
     return {

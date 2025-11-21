@@ -106,7 +106,7 @@ def set_client_overrides(account_number):
         return jsonify({'message': 'Overrides updated successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @api_bp.route('/client/<account_number>', methods=['DELETE'])
@@ -169,7 +169,7 @@ def set_asset_override(asset_id):
         return jsonify({'message': 'Asset override updated successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @api_bp.route('/asset/<int:asset_id>', methods=['DELETE'])
@@ -230,7 +230,7 @@ def set_user_override(user_id):
         return jsonify({'message': 'User override updated successfully'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @api_bp.route('/user/<int:user_id>', methods=['DELETE'])
@@ -291,7 +291,7 @@ def add_manual_asset(account_number):
         return jsonify({'message': 'Manual asset added', 'id': asset.id}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @api_bp.route('/manual-assets/<account_number>/<int:asset_id>', methods=['DELETE'])
@@ -355,7 +355,7 @@ def add_manual_user(account_number):
         return jsonify({'message': 'Manual user added', 'id': user.id}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @api_bp.route('/manual-users/<account_number>/<int:user_id>', methods=['DELETE'])
@@ -427,7 +427,7 @@ def add_custom_line_item(account_number):
         return jsonify({'message': 'Custom line item added', 'id': item.id}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @api_bp.route('/line-items/<account_number>/<int:item_id>', methods=['PUT'])
@@ -466,7 +466,7 @@ def update_custom_line_item(account_number, item_id):
         return jsonify({'message': 'Line item updated'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @api_bp.route('/line-items/<account_number>/<int:item_id>', methods=['DELETE'])
@@ -553,7 +553,7 @@ def set_feature_overrides(account_number):
         return jsonify({'message': f'Feature overrides updated: {", ".join(updated)}'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @api_bp.route('/features/<account_number>/<feature_type>', methods=['DELETE'])
