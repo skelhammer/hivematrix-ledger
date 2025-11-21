@@ -2,6 +2,8 @@ from flask import Flask
 import json
 import os
 import secrets
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 app = Flask(__name__, instance_relative_config=True)
 
@@ -59,6 +61,14 @@ except FileNotFoundError:
 
 from extensions import db
 db.init_app(app)
+
+# Initialize rate limiting
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per hour", "50 per minute"],
+    storage_uri="memory://"
+)
 
 # Apply middleware to handle URL prefix when behind Nexus proxy
 from app.middleware import PrefixMiddleware

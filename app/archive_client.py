@@ -178,7 +178,7 @@ def send_to_archive(account_number, year, month, user_email=None, notes=None):
             return False, f"Archive service error: {response.text}", None
 
     except Exception as e:
-        return False, f"Failed to connect to Archive service: {str(e)}", None
+        return False, "Failed to connect to Archive service", None
 
 
 def check_if_archived(invoice_number):
