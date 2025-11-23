@@ -39,15 +39,30 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
     manual_users = ManualUser.query.filter_by(company_account_number=account_number).all()
     custom_line_items = CustomLineItem.query.filter_by(company_account_number=account_number).all()
 
-    # Fetch overrides
-    asset_overrides = {
-        override.asset_id: override
-        for override in AssetBillingOverride.query.all()
-    }
-    user_overrides = {
-        override.user_id: override
-        for override in UserBillingOverride.query.all()
-    }
+    # Fetch overrides - OPTIMIZED: Only fetch overrides for THIS company's assets/users
+    # Build list of asset IDs and user IDs from Codex data
+    asset_ids = [asset.get('id') for asset in assets_data if asset.get('id')]
+    user_ids = [user.get('id') for user in users_data if user.get('id')]
+
+    # Query only the relevant overrides (instead of fetching ALL overrides for ALL companies)
+    asset_overrides = {}
+    if asset_ids:
+        asset_overrides = {
+            override.asset_id: override
+            for override in AssetBillingOverride.query.filter(
+                AssetBillingOverride.asset_id.in_(asset_ids)
+            ).all()
+        }
+
+    user_overrides = {}
+    if user_ids:
+        user_overrides = {
+            override.user_id: override
+            for override in UserBillingOverride.query.filter(
+                UserBillingOverride.user_id.in_(user_ids)
+            ).all()
+        }
+
     rate_overrides = ClientBillingOverride.query.filter_by(
         company_account_number=account_number
     ).first()

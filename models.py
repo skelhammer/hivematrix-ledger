@@ -10,7 +10,7 @@ class ClientBillingOverride(db.Model):
     __tablename__ = 'client_billing_overrides'
 
     id = db.Column(db.Integer, primary_key=True)
-    company_account_number = db.Column(db.String(50), unique=True, nullable=False)
+    company_account_number = db.Column(db.String(50), unique=True, nullable=False, index=True)
 
     # Plan override
     override_billing_plan_enabled = db.Column(db.Boolean, default=False)
@@ -68,7 +68,7 @@ class AssetBillingOverride(db.Model):
     __tablename__ = 'asset_billing_overrides'
 
     id = db.Column(db.Integer, primary_key=True)
-    asset_id = db.Column(db.Integer, nullable=False, unique=True)  # ID from Codex
+    asset_id = db.Column(db.Integer, nullable=False, unique=True, index=True)  # ID from Codex
     billing_type = db.Column(db.String(50))  # 'Workstation', 'Server', 'VM', 'Switch', 'Firewall', 'Custom', 'No Charge'
     custom_cost = db.Column(db.Numeric(10, 2))  # If billing_type is 'Custom'
 
@@ -78,7 +78,7 @@ class UserBillingOverride(db.Model):
     __tablename__ = 'user_billing_overrides'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False, unique=True)  # ID from Codex
+    user_id = db.Column(db.Integer, nullable=False, unique=True, index=True)  # ID from Codex
     billing_type = db.Column(db.String(50))  # 'Paid', 'Free', 'Custom'
     custom_cost = db.Column(db.Numeric(10, 2))  # If billing_type is 'Custom'
 
@@ -263,6 +263,11 @@ class SnapshotLineItem(db.Model):
 
     # Relationship
     snapshot = db.relationship('BillingSnapshot', backref=db.backref('line_items', lazy='dynamic'))
+
+    # Indexes for searching and filtering
+    __table_args__ = (
+        db.Index('idx_line_items_type', 'line_type', 'item_name'),
+    )
 
 
 class ScheduledSnapshot(db.Model):

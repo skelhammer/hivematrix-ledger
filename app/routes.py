@@ -4,9 +4,7 @@ from app.auth import token_required, billing_required, admin_required
 from app.codex_client import get_all_companies, get_all_companies_with_details, get_billing_data_from_codex
 from app.billing_engine import get_billing_data_for_client
 from app.invoice_generator import generate_invoice_csv, generate_bulk_invoices_zip, get_invoice_summary
-# OLD: from app.archive_client import send_to_archive, check_if_archived
-# NEW: Archive merged into Ledger - use direct database writes
-from app.archive.snapshot import create_snapshot as send_to_archive, check_if_archived
+from app.archive.snapshot import create_snapshot, check_if_archived
 from datetime import datetime, timedelta
 from models import ClientBillingOverride, ManualAsset, ManualUser, CustomLineItem, AssetBillingOverride, UserBillingOverride, TicketDetail, ClientFeatureOverride
 from app.codex_client import CodexBillingClient
@@ -490,8 +488,8 @@ def accept_bill():
     month = data['month']
     notes = data.get('notes')
 
-    # Send to archive
-    success, message, invoice_number = send_to_archive(
+    # Create billing snapshot
+    success, message, invoice_number = create_snapshot(
         account_number,
         year,
         month,
@@ -720,6 +718,11 @@ def api_billing_dashboard():
 
     # If bulk endpoint not available, fall back to individual calls
     if companies_bulk is None:
+        from app.helm_logger import get_helm_logger
+        logger = get_helm_logger()
+        if logger:
+            logger.warning("Bulk API not available, falling back to N+1 queries. This will be slower.")
+
         companies = get_all_companies()
         if not companies:
             return jsonify({
