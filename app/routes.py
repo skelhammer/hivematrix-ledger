@@ -11,6 +11,13 @@ from datetime import datetime, timedelta
 from models import ClientBillingOverride, ManualAsset, ManualUser, CustomLineItem, AssetBillingOverride, UserBillingOverride, TicketDetail, ClientFeatureOverride
 from app.codex_client import CodexBillingClient
 from extensions import db
+import sys
+import os
+
+# Health check library
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from health_check import HealthChecker
+from extensions import db
 import io
 import csv
 import zipfile
@@ -939,8 +946,25 @@ def export_all_bills_zip():
 @app.route('/health', methods=['GET'])
 @limiter.exempt
 def health_check():
-    """Health check endpoint for monitoring"""
-    return {
-        'status': 'healthy',
-        'timestamp': datetime.utcnow().isoformat()
-    }
+    """
+    Comprehensive health check endpoint.
+
+    Checks:
+    - PostgreSQL database connectivity
+    - Disk space
+    - Core and Codex service availability
+
+    Returns:
+        JSON: Detailed health status with HTTP 200 (healthy) or 503 (unhealthy/degraded)
+    """
+    # Initialize health checker
+    health_checker = HealthChecker(
+        service_name='ledger',
+        db=db,
+        dependencies=[
+            ('core', 'http://localhost:5000'),
+            ('codex', 'http://localhost:5010')
+        ]
+    )
+
+    return health_checker.get_health()
