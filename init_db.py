@@ -46,7 +46,7 @@ def get_db_credentials(config):
         'host': config.get('database_credentials', 'db_host', fallback='localhost'),
         'port': config.get('database_credentials', 'db_port', fallback='5432'),
         'user': config.get('database_credentials', 'db_user', fallback='ledger_user'),
-        'dbname': config.get('database_credentials', 'db_dbname', fallback='ledger_db')
+        'dbname': config.get('database_credentials', 'db_name', fallback='ledger_db')
     }
 
     host = input(f"Host [{db_details['host']}]: ") or db_details['host']
@@ -311,7 +311,7 @@ def init_db_headless(db_host, db_port, db_name, db_user, db_password, migrate_on
         config.add_section('database_credentials')
     config.set('database_credentials', 'db_host', db_host)
     config.set('database_credentials', 'db_port', db_port)
-    config.set('database_credentials', 'db_dbname', db_name)
+    config.set('database_credentials', 'db_name', db_name)
     config.set('database_credentials', 'db_user', db_user)
 
     with open(config_path, 'w') as configfile:
