@@ -1,18 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Settings - HiveMatrix Ledger</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        .admin-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-    </style>
-</head>
-<body>
+{% extends "layout.html" %}
+
+{% block title %}Admin Settings{% endblock %}
+
+{% block content %}
     <div class="card">
         <div class="card__header">
             <h1 class="card__title">Admin Settings</h1>
@@ -100,17 +90,17 @@
                             <td>
                                 {% if job.last_status == 'Success' %}
                                 <span class="u-text-success">
-                                    <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                    <i data-lucide="check-circle" class="btn__icon"></i>
                                     {{ job.last_status }}
                                 </span>
                                 {% elif job.last_status == 'Running' %}
                                 <span class="u-text-info">
-                                    <i data-lucide="loader" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                    <i data-lucide="loader" class="btn__icon"></i>
                                     {{ job.last_status }}
                                 </span>
                                 {% elif job.last_status %}
                                 <span class="u-text-danger">
-                                    <i data-lucide="alert-circle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+                                    <i data-lucide="alert-circle" class="btn__icon"></i>
                                     {{ job.last_status }}
                                 </span>
                                 {% else %}
@@ -143,12 +133,4 @@
         </a>
     </div>
 
-    <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
-    </script>
-    <div class="version-footer">
-        <span class="version-footer__text">{{ app_service_name }} v{{ app_version }}</span>
-    </div>
-</body>
-</html>
+{% endblock %}

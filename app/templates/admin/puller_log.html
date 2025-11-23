@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Puller Log - {{ job.job_name }}</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body>
+{% extends "layout.html" %}
+
+{% block title %}Puller Log - {{ job.job_name }}{% endblock %}
+
+{% block content %}
     <div class="card">
         <div class="card__header">
             <h1 class="card__title">Log: {{ job.job_name }}</h1>
@@ -72,12 +69,4 @@
         </a>
     </div>
 
-    <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
-    </script>
-    <div class="version-footer">
-        <span class="version-footer__text">{{ app_service_name }} v{{ app_version }}</span>
-    </div>
-</body>
-</html>
+{% endblock %}

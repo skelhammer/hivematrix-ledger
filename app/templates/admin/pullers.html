@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Data Pullers - Admin</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body>
+{% extends "layout.html" %}
+
+{% block title %}Data Pullers - Admin{% endblock %}
+
+{% block content %}
     <div class="card">
         <div class="card__header">
             <h1 class="card__title">Data Sync Jobs & Pullers</h1>
@@ -227,20 +224,22 @@
             </span>
         </a>
     </div>
+{% endblock %}
 
-    <script>
+{% block scripts %}
+<script>
         function showAddForm() {
             document.getElementById('addForm').style.display = 'block';
-            lucide.createIcons();
         }
 
         function hideAddForm() {
             document.getElementById('addForm').style.display = 'none';
         }
 
-        function editJob(id, name, scriptPath, cron, enabled, description) {
+        function showEditForm(id, name, path, cron, enabled, description) {
+            document.getElementById('edit_id').value = id;
             document.getElementById('edit_job_name').value = name;
-            document.getElementById('edit_script_path').value = scriptPath;
+            document.getElementById('edit_script_path').value = path;
             document.getElementById('edit_schedule_cron').value = cron;
             document.getElementById('edit_enabled').checked = enabled;
             document.getElementById('edit_description').value = description;
@@ -255,9 +254,5 @@
 
         // Initialize Lucide icons
         lucide.createIcons();
-    </script>
-    <div class="version-footer">
-        <span class="version-footer__text">{{ app_service_name }} v{{ app_version }}</span>
-    </div>
-</body>
-</html>
+</script>
+{% endblock %}

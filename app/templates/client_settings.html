@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ company.name }} - Billing Settings - HiveMatrix Ledger</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body>
+{% extends "layout.html" %}
+
+{% block title %}{{ company.name }} - Billing Settings{% endblock %}
+
+{% block content %}
     <div class="card">
         <div class="card__header">
             <h1 class="card__title">Override Settings for {{ company.name }}</h1>
@@ -494,30 +491,29 @@
         </div>
     </form>
 
-    <script>
-        // Toggle line item fields based on type
-        document.getElementById('line_item_type').addEventListener('change', function() {
-            document.getElementById('recurring_fields').style.display = this.value === 'recurring' ? 'block' : 'none';
-            document.getElementById('one_off_fields').style.display = this.value === 'one_off' ? 'grid' : 'none';
-            document.getElementById('yearly_fields').style.display = this.value === 'yearly' ? 'grid' : 'none';
-        });
+{% endblock %}
 
-        // Initialize Lucide icons
-        lucide.createIcons();
+{% block scripts %}
+<script>
+    // Toggle line item fields based on type
+    document.getElementById('line_item_type').addEventListener('change', function() {
+        document.getElementById('recurring_fields').style.display = this.value === 'recurring' ? 'block' : 'none';
+        document.getElementById('one_off_fields').style.display = this.value === 'one_off' ? 'grid' : 'none';
+        document.getElementById('yearly_fields').style.display = this.value === 'yearly' ? 'grid' : 'none';
+    });
 
-        // Toast notification functions
-        function dismissToast(toast) {
-            toast.classList.add('toast--hiding');
-            setTimeout(() => toast.remove(), 300);
-        }
+    // Initialize Lucide icons
+    lucide.createIcons();
 
-        // Auto-dismiss toasts after 5 seconds
-        document.querySelectorAll('.toast').forEach(toast => {
-            setTimeout(() => dismissToast(toast), 5000);
-        });
-    </script>
-    <div class="version-footer">
-        <span class="version-footer__text">{{ app_service_name }} v{{ app_version }}</span>
-    </div>
-</body>
-</html>
+    // Toast notification functions
+    function dismissToast(toast) {
+        toast.classList.add('toast--hiding');
+        setTimeout(() => toast.remove(), 300);
+    }
+
+    // Auto-dismiss toasts after 5 seconds
+    document.querySelectorAll('.toast').forEach(toast => {
+        setTimeout(() => dismissToast(toast), 5000);
+    });
+</script>
+{% endblock %}

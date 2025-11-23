@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ data.client.name }} - Billing Details</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body>
+{% extends "layout.html" %}
+
+{% block title %}{{ data.client.name }} - Billing Details{% endblock %}
+
+{% block content %}
     <div class="card">
         <div class="card__header">
             <h1 class="card__title">{{ data.client.name }}</h1>
@@ -195,7 +192,10 @@
         </div>
     </div>
 
-    <script>
+{% endblock %}
+
+{% block scripts %}
+<script>
     // Check if bill is already archived
     fetch('/ledger/api/bill/check-archived/{{ account_number }}?year={{ year }}&month={{ month }}')
         .then(response => response.json())
@@ -209,7 +209,7 @@
                 const status = document.getElementById('archiveStatus');
                 status.style.display = 'block';
                 status.classList.add('alert', 'alert--success');
-                status.innerHTML = `<i data-lucide="check-circle" style="width: 16px; height: 16px; vertical-align: middle;"></i> This bill has been accepted and archived as invoice ${data.invoice_number}`;
+                status.innerHTML = `<i data-lucide="check-circle" class="btn__icon"></i> This bill has been accepted and archived as invoice ${data.invoice_number}`;
 
                 lucide.createIcons();
             }
@@ -253,17 +253,17 @@
 
             if (status === 201) {
                 statusDiv.className = 'alert alert--success u-mt-1';
-                statusDiv.innerHTML = `<i data-lucide="check-circle" style="width: 16px; height: 16px; vertical-align: middle;"></i> Bill accepted and archived successfully! Invoice: ${body.invoice_number}`;
+                statusDiv.innerHTML = `<i data-lucide="check-circle" class="btn__icon"></i> Bill accepted and archived successfully! Invoice: ${body.invoice_number}`;
                 btn.innerHTML = '<span class="btn__label"><i data-lucide="check" class="btn__icon"></i> Already Archived</span>';
                 btn.classList.add('btn--success');
             } else if (status === 409) {
                 statusDiv.className = 'alert alert--warning u-mt-1';
-                statusDiv.innerHTML = `<i data-lucide="alert-triangle" style="width: 16px; height: 16px; vertical-align: middle;"></i> ${body.error}`;
+                statusDiv.innerHTML = `<i data-lucide="alert-triangle" class="btn__icon"></i> ${body.error}`;
                 btn.innerHTML = '<span class="btn__label"><i data-lucide="check" class="btn__icon"></i> Already Archived</span>';
                 btn.classList.add('btn--success');
             } else {
                 statusDiv.className = 'alert alert--error u-mt-1';
-                statusDiv.innerHTML = `<i data-lucide="alert-circle" style="width: 16px; height: 16px; vertical-align: middle;"></i> Error: ${body.error}`;
+                statusDiv.innerHTML = `<i data-lucide="alert-circle" class="btn__icon"></i> Error: ${body.error}`;
                 btn.disabled = false;
                 btn.innerHTML = '<span class="btn__label"><i data-lucide="check" class="btn__icon"></i> Accept Bill & Archive</span>';
             }
@@ -273,7 +273,7 @@
             const statusDiv = document.getElementById('archiveStatus');
             statusDiv.style.display = 'block';
             statusDiv.className = 'alert alert--error u-mt-1';
-            statusDiv.innerHTML = `<i data-lucide="alert-circle" style="width: 16px; height: 16px; vertical-align: middle;"></i> Error: ${err.message}`;
+            statusDiv.innerHTML = `<i data-lucide="alert-circle" class="btn__icon"></i> Error: ${err.message}`;
             btn.disabled = false;
             btn.innerHTML = '<span class="btn__label"><i data-lucide="check" class="btn__icon"></i> Accept Bill & Archive</span>';
             lucide.createIcons();
@@ -282,9 +282,5 @@
 
     // Initialize Lucide icons
     lucide.createIcons();
-    </script>
-    <div class="version-footer">
-        <span class="version-footer__text">{{ app_service_name }} v{{ app_version }}</span>
-    </div>
-</body>
-</html>
+</script>
+{% endblock %}
