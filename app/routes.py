@@ -538,9 +538,117 @@ def check_bill_archived(account_number):
 @app.route('/api/billing/<account_number>')
 @token_required
 def api_billing(account_number):
-    """
-    API endpoint to get billing data for a specific company.
-    Works for both user and service calls.
+    """Get billing calculation for a company for a specific period.
+    ---
+    tags:
+      - Billing
+    summary: Calculate billing for a company
+    description: |
+      Calculates billing charges for a company based on their billing plan, users, and assets.
+      Retrieves company data from Codex, applies the configured billing plan, and returns
+      detailed pricing breakdown.
+
+      Used by billing dashboard and invoice generation processes.
+    security:
+      - Bearer: []
+    parameters:
+      - name: account_number
+        in: path
+        type: string
+        required: true
+        description: The company's account number
+        example: "12345"
+      - name: year
+        in: query
+        type: integer
+        required: false
+        description: Year for billing calculation (defaults to current year)
+        example: 2025
+      - name: month
+        in: query
+        type: integer
+        required: false
+        description: Month for billing calculation (defaults to current month)
+        example: 11
+    responses:
+      200:
+        description: Billing calculation completed successfully
+        schema:
+          type: object
+          properties:
+            account_number:
+              type: string
+              example: "12345"
+            company_name:
+              type: string
+              example: "Acme Corporation"
+            billing_period:
+              type: string
+              example: "2025-11"
+            receipt:
+              type: object
+              description: Detailed pricing breakdown by line item
+              properties:
+                total:
+                  type: number
+                  format: float
+                  example: 1250.00
+                line_items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                        example: "Per-user licenses"
+                      quantity:
+                        type: integer
+                        example: 25
+                      rate:
+                        type: number
+                        format: float
+                        example: 50.00
+                      amount:
+                        type: number
+                        format: float
+                        example: 1250.00
+            quantities:
+              type: object
+              description: Counted quantities (users, assets, etc.)
+              properties:
+                users:
+                  type: integer
+                  example: 25
+                assets:
+                  type: integer
+                  example: 35
+            effective_rates:
+              type: object
+              description: Applied pricing rates
+            plan_features:
+              type: object
+              description: Features included in the billing plan
+            feature_override_status:
+              type: object
+              description: Company-specific feature overrides
+      404:
+        description: Company not found
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "Company 12345 not found"
+      500:
+        description: Unable to calculate billing
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "Unable to calculate billing. Check plan configuration."
+      401:
+        description: Unauthorized - Invalid or missing JWT token
     """
     year = request.args.get('year', datetime.now().year, type=int)
     month = request.args.get('month', datetime.now().month, type=int)
@@ -730,7 +838,57 @@ def api_billing_dashboard():
 @app.route('/api/plans')
 @token_required
 def api_plans():
-    """API endpoint to list all billing plans from Codex."""
+    """List all available billing plans.
+    ---
+    tags:
+      - Billing Plans
+    summary: Get all billing plans
+    description: |
+      Retrieves all billing plans from Codex with their pricing structures.
+      Used by billing dashboard and company configuration.
+
+      Plans define pricing models (per-user, flat-rate, tiered) and support levels.
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: List of billing plans retrieved successfully
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              billing_plan:
+                type: string
+                example: "Standard Support"
+              term_length:
+                type: integer
+                description: Contract term length in months
+                example: 12
+              support_level:
+                type: string
+                example: "Standard"
+              per_user_cost:
+                type: number
+                format: float
+                description: Monthly cost per user
+                example: 50.00
+              per_workstation_cost:
+                type: number
+                format: float
+                description: Monthly cost per workstation
+                example: 25.00
+              per_server_cost:
+                type: number
+                format: float
+                description: Monthly cost per server
+                example: 150.00
+      401:
+        description: Unauthorized - Invalid or missing JWT token
+    """
     plans = CodexBillingClient.get_all_plans()
     return jsonify([{
         'id': p.get('id'),
