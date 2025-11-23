@@ -83,7 +83,7 @@ class UserBillingOverride(db.Model):
     custom_cost = db.Column(db.Numeric(10, 2))  # If billing_type is 'Custom'
 
 
-# Manual Assets - Assets added manually (not from Codex/Datto)
+# Manual Assets - Assets added manually (not from Codex/RMM providers)
 class ManualAsset(db.Model):
     __tablename__ = 'manual_assets'
 

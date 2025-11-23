@@ -216,7 +216,8 @@ def get_billing_data_for_client(company_data, assets_data, users_data, year, mon
     total_asset_charges = 0.0
 
     for asset in all_assets:
-        is_manual = 'datto_uid' not in asset
+        # Manual assets have 'billing_type' field, Codex assets don't
+        is_manual = 'billing_type' in asset
         override = asset_overrides.get(asset.get('id')) if not is_manual else None
 
         if is_manual:
