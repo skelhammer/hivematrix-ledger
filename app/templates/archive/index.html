@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archive - Historical Billing</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="card">
+        <div class="card__header">
+            <h1 class="card__title">Archive - Historical Billing</h1>
+        </div>
+        <div class="card__body">
+            <p class="u-text-muted u-mb-3">Immutable billing snapshots for historical record-keeping</p>
+
+            <div class="stats-grid u-mb-3">
+                <div class="stat-card">
+                    <div class="stat-card__label">Total Snapshots</div>
+                    <div class="stat-card__value">{{ total_snapshots }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card__label">Companies Archived</div>
+                    <div class="stat-card__value">{{ total_companies }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card__label">Archive Status</div>
+                    <div class="stat-card__value" style="font-size: 1.25rem;">✓ Active</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card__header">
+            <h2 class="card__title">Search Historical Bills</h2>
+        </div>
+        <div class="card__body">
+            <div class="search-form u-mb-2">
+                <div class="search-form__controls">
+                    <input type="text" id="searchAccount" placeholder="Account Number" class="search-form__input">
+                    <input type="text" id="searchCompany" placeholder="Company Name" class="search-form__input">
+                    <select id="searchYear" class="search-form__input" style="flex: 0 0 150px;">
+                        <option value="">All Years</option>
+                        {% for year in range(2020, 2030) %}
+                        <option value="{{ year }}">{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                    <select id="searchMonth" class="search-form__input" style="flex: 0 0 150px;">
+                        <option value="">All Months</option>
+                        {% for month in range(1, 13) %}
+                        <option value="{{ month }}">{{ "%02d"|format(month) }} - {{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month-1] }}</option>
+                        {% endfor %}
+                    </select>
+                    <button onclick="searchSnapshots()" class="btn btn--primary">
+                        <span class="btn__label">
+                            <i data-lucide="search" class="btn__icon"></i>
+                            Search
+                        </span>
+                    </button>
+                    <button onclick="clearSearch()" class="btn">
+                        <span class="btn__label">
+                            <i data-lucide="x" class="btn__icon"></i>
+                            Clear
+                        </span>
+                    </button>
+                </div>
+            </div>
+            <div id="searchResults"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card__header">
+            <h2 class="card__title">Recent Snapshots</h2>
+        </div>
+        <div class="card__body">
+            {% if recent_snapshots %}
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Invoice Number</th>
+                            <th>Company</th>
+                            <th>Period</th>
+                            <th>Archived</th>
+                            <th>Total Amount</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for snapshot in recent_snapshots %}
+                        <tr>
+                            <td><strong>{{ snapshot.invoice_number }}</strong></td>
+                            <td>{{ snapshot.company_name }}</td>
+                            <td>{{ snapshot.billing_year }}-{{ "%02d"|format(snapshot.billing_month) }}</td>
+                            <td>{{ snapshot.archived_at[:10] }}</td>
+                            <td>${{ "%.2f"|format(snapshot.total_amount) }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="/ledger/archive/api/snapshot/{{ snapshot.invoice_number }}" class="btn btn--small" target="_blank">
+                                        <span class="btn__label">
+                                            <i data-lucide="file-json" class="btn__icon"></i>
+                                            View JSON
+                                        </span>
+                                    </a>
+                                    <a href="/ledger/archive/api/snapshot/{{ snapshot.invoice_number }}/csv" class="btn btn--primary btn--small">
+                                        <span class="btn__label">
+                                            <i data-lucide="download" class="btn__icon"></i>
+                                            Download CSV
+                                        </span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i data-lucide="archive" style="width: 48px; height: 48px; margin-bottom: 1rem; color: #7f849c;"></i>
+                <p>No snapshots archived yet. Bills will appear here once accepted in Ledger.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card__header">
+            <h2 class="card__title">Scheduled Snapshots</h2>
+        </div>
+        <div class="card__body">
+            <p class="u-text-muted u-mb-2">Automated snapshot creation is configured to run on a schedule.</p>
+            <div id="schedulerInfo" class="info-box">
+                <p class="u-text-muted"><em>Loading scheduler configuration...</em></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load scheduler configuration
+        fetch('/ledger/archive/api/scheduler/config', {
+            credentials: 'same-origin'
+        })
+            .then(response => response.json())
+            .then(data => {
+                const config = data.config;
+                const infoDiv = document.getElementById('schedulerInfo');
+
+                if (!config) {
+                    infoDiv.innerHTML = '<p class="u-text-muted">No scheduler configuration found.</p>';
+                    return;
+                }
+
+                const statusBadge = config.enabled
+                    ? '<span class="badge badge--success">Enabled</span>'
+                    : '<span class="badge badge--warning">Disabled</span>';
+
+                const lastRun = config.last_run_at
+                    ? new Date(config.last_run_at).toLocaleString()
+                    : 'Never';
+
+                infoDiv.innerHTML = `
+                    <p class="u-mb-1"><strong>Status:</strong> ${statusBadge}</p>
+                    <p class="u-mb-1"><strong>Schedule:</strong> Day ${config.day_of_month} of each month at ${config.hour}:00</p>
+                    <p class="u-mb-1"><strong>Target:</strong> ${config.snapshot_previous_month ? 'Previous month' : 'Current month'} billing</p>
+                    <p class="u-mb-1"><strong>Companies:</strong> ${config.snapshot_all_companies ? 'All companies' : 'Configured companies'}</p>
+                    <p class="u-mb-1"><strong>Last Run:</strong> ${lastRun}</p>
+                    ${config.last_run_status ? `<p class="u-mb-1"><strong>Last Status:</strong> ${config.last_run_status} (${config.last_run_count || 0} snapshots)</p>` : ''}
+                `;
+            })
+            .catch(err => {
+                document.getElementById('schedulerInfo').innerHTML = '<p class="u-text-error">Error loading scheduler info.</p>';
+            });
+
+        // Search functionality
+        function searchSnapshots() {
+            const account = document.getElementById('searchAccount').value;
+            const company = document.getElementById('searchCompany').value;
+            const year = document.getElementById('searchYear').value;
+            const month = document.getElementById('searchMonth').value;
+
+            const params = new URLSearchParams();
+            if (account) params.append('account_number', account);
+            if (year) params.append('year', year);
+            if (month) params.append('month', month);
+
+            fetch('/ledger/archive/api/snapshots/search?' + params.toString(), {
+                credentials: 'same-origin'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const resultsDiv = document.getElementById('searchResults');
+
+                    if (data.results.length === 0) {
+                        resultsDiv.innerHTML = '<div class="empty-state u-mt-2">No snapshots found matching your criteria.</div>';
+                        return;
+                    }
+
+                    let html = `<p class="u-mb-2 u-mt-2 u-text-muted">Found ${data.total} snapshots</p>`;
+                    html += '<div class="table-wrapper"><table class="data-table"><thead><tr><th>Invoice</th><th>Company</th><th>Period</th><th>Archived</th><th>Total</th><th>Actions</th></tr></thead><tbody>';
+
+                    // Filter by company name if specified
+                    let results = data.results;
+                    if (company) {
+                        results = results.filter(s => s.company_name.toLowerCase().includes(company.toLowerCase()));
+                    }
+
+                    results.forEach(s => {
+                        html += `
+                            <tr>
+                                <td><strong>${s.invoice_number}</strong></td>
+                                <td>${s.company_name}</td>
+                                <td>${s.billing_year}-${s.billing_month.toString().padStart(2, '0')}</td>
+                                <td>${s.archived_at.substring(0, 10)}</td>
+                                <td>$${s.total_amount.toFixed(2)}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="/ledger/archive/api/snapshot/${s.invoice_number}" class="btn btn--small" target="_blank">
+                                            <span class="btn__label">
+                                                <i data-lucide="file-json" class="btn__icon"></i>
+                                                View
+                                            </span>
+                                        </a>
+                                        <a href="/ledger/archive/api/snapshot/${s.invoice_number}/csv" class="btn btn--primary btn--small">
+                                            <span class="btn__label">
+                                                <i data-lucide="download" class="btn__icon"></i>
+                                                CSV
+                                            </span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    html += '</tbody></table></div>';
+                    resultsDiv.innerHTML = html;
+                    lucide.createIcons();
+                })
+                .catch(err => {
+                    document.getElementById('searchResults').innerHTML = '<div class="alert alert--error u-mt-2">Error performing search.</div>';
+                });
+        }
+
+        function clearSearch() {
+            document.getElementById('searchAccount').value = '';
+            document.getElementById('searchCompany').value = '';
+            document.getElementById('searchYear').value = '';
+            document.getElementById('searchMonth').value = '';
+            document.getElementById('searchResults').innerHTML = '';
+        }
+
+        // Initialize Lucide icons
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+    <div class="version-footer">
+        <span class="version-footer__text">{{ app_service_name }} v{{ app_version }}</span>
+    </div>
+</body>
+</html>

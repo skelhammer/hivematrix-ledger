@@ -4,7 +4,9 @@ from app.auth import token_required, billing_required, admin_required
 from app.codex_client import get_all_companies, get_all_companies_with_details, get_billing_data_from_codex
 from app.billing_engine import get_billing_data_for_client
 from app.invoice_generator import generate_invoice_csv, generate_bulk_invoices_zip, get_invoice_summary
-from app.archive_client import send_to_archive, check_if_archived
+# OLD: from app.archive_client import send_to_archive, check_if_archived
+# NEW: Archive merged into Ledger - use direct database writes
+from app.archive.snapshot import create_snapshot as send_to_archive, check_if_archived
 from datetime import datetime, timedelta
 from models import ClientBillingOverride, ManualAsset, ManualUser, CustomLineItem, AssetBillingOverride, UserBillingOverride, TicketDetail, ClientFeatureOverride
 from app.codex_client import CodexBillingClient

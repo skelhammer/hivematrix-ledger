@@ -56,6 +56,16 @@
                     </div>
                 </a>
 
+                <a href="/ledger/archive/" class="dashboard-card">
+                    <div class="dashboard-card__icon">
+                        <i data-lucide="archive"></i>
+                    </div>
+                    <div class="dashboard-card__content">
+                        <h2 class="dashboard-card__title">Archive</h2>
+                        <p class="dashboard-card__description">Historical billing snapshots</p>
+                    </div>
+                </a>
+
                 {% if user.permission_level == 'admin' %}
                 <a href="/ledger/admin/settings" class="dashboard-card">
                     <div class="dashboard-card__icon">

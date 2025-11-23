@@ -26,7 +26,9 @@ def _import_app():
         from models import (
             ClientBillingOverride, AssetBillingOverride, UserBillingOverride,
             ManualAsset, ManualUser, CustomLineItem, TicketDetail, ClientFeatureOverride,
-            SchedulerJob
+            SchedulerJob,
+            # Archive models (merged from hivematrix-archive)
+            BillingSnapshot, SnapshotLineItem, ScheduledSnapshot, SnapshotJob
         )
         app = flask_app
         db = database
