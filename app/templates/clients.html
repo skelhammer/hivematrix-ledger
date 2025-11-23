@@ -1,509 +1,483 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Clients - HiveMatrix Ledger</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        .sortable-header {
-            cursor: pointer;
-            user-select: none;
-        }
-        .sortable-header:hover {
-            opacity: 0.8;
-        }
-        .sort-indicator {
-            margin-left: 5px;
-            font-size: 0.8em;
-        }
-        .contract-expired {
-            color: var(--color-danger);
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    {% macro plan_badge_class(plan) -%}
-    {%- if not plan or plan == 'No Plan' or plan == 'N/A' -%}
-    {%- elif 'platinum' in plan.lower() -%}badge--platinum
-    {%- elif 'premium' in plan.lower() -%}badge--success
-    {%- elif 'advanced' in plan.lower() -%}badge--gold
-    {%- elif 'basic' in plan.lower() -%}badge--info
-    {%- elif 'break fix' in plan.lower() or 'pro services' in plan.lower() -%}badge--warning
-    {%- endif -%}
-    {%- endmacro %}
-    <div class="card">
-        <div class="card__header">
-            <h1 class="card__title">Clients</h1>
-            <div class="card__header-actions">
-                <button class="btn" onclick="window.location.href='/ledger/'">
+{% extends "layout.html" %}
+
+{% block title %}Clients - Ledger{% endblock %}
+
+{% block content %}
+{% macro plan_badge_class(plan) -%}
+{%- if not plan or plan == 'No Plan' or plan == 'N/A' -%}
+{%- elif 'platinum' in plan.lower() -%}badge--platinum
+{%- elif 'premium' in plan.lower() -%}badge--success
+{%- elif 'advanced' in plan.lower() -%}badge--gold
+{%- elif 'basic' in plan.lower() -%}badge--info
+{%- elif 'break fix' in plan.lower() or 'pro services' in plan.lower() -%}badge--warning
+{%- endif -%}
+{%- endmacro %}
+
+<div class="card">
+    <div class="card__header">
+        <h1 class="card__title">Clients</h1>
+        <div class="card__header-actions">
+            <button class="btn" onclick="window.location.href='/ledger/'">
+                <span class="btn__label">
+                    <i data-lucide="arrow-left" class="btn__icon"></i>
+                    Back to Dashboard
+                </span>
+            </button>
+        </div>
+    </div>
+    <div class="card__body">
+        {% if filter_type %}
+        <div class="alert alert--info u-mb-2">
+            <p>
+                <strong>Filter Active:</strong>
+                {% if filter_type == 'active' %}Showing Active Contracts
+                {% elif filter_type == 'expiring' %}Showing Contracts Expiring Soon (Next 30 Days)
+                {% endif %}
+                <button class="btn btn--small" onclick="window.location.href='/ledger/clients'" style="margin-left: 10px;">
                     <span class="btn__label">
-                        <i data-lucide="arrow-left" class="btn__icon"></i>
-                        Back to Dashboard
+                        <i data-lucide="x" class="btn__icon"></i>
+                        Clear Filter
+                    </span>
+                </button>
+            </p>
+        </div>
+        {% endif %}
+
+        <div class="search-form u-mb-2">
+            <div class="search-form__controls">
+                <input type="text" id="search-box" placeholder="Search clients..." class="search-form__input">
+                <button id="export-csv-btn" class="btn btn--primary">
+                    <span class="btn__label">
+                        <i data-lucide="download" class="btn__icon"></i>
+                        Export CSV
+                    </span>
+                </button>
+                {% if user.permission_level in ['admin', 'billing'] %}
+                <button id="export-zip-btn" class="btn btn--primary">
+                    <span class="btn__label">
+                        <i data-lucide="archive" class="btn__icon"></i>
+                        Export All Invoices (ZIP)
+                    </span>
+                </button>
+                <button id="accept-all-btn" class="btn btn--success">
+                    <span class="btn__label">
+                        <i data-lucide="check-circle" class="btn__icon"></i>
+                        Accept All Bills & Archive
+                    </span>
+                </button>
+                {% endif %}
+                <button id="refresh-btn" class="btn">
+                    <span class="btn__label">
+                        <i data-lucide="refresh-cw" class="btn__icon"></i>
+                        Refresh
                     </span>
                 </button>
             </div>
         </div>
-        <div class="card__body">
-            {% if filter_type %}
-            <div class="alert alert--info u-mb-2">
-                <p>
-                    <strong>Filter Active:</strong>
-                    {% if filter_type == 'active' %}Showing Active Contracts
-                    {% elif filter_type == 'expiring' %}Showing Contracts Expiring Soon (Next 30 Days)
-                    {% endif %}
-                    <button class="btn btn--small" onclick="window.location.href='/ledger/clients'" style="margin-left: 10px;">
-                        <span class="btn__label">
-                            <i data-lucide="x" class="btn__icon"></i>
-                            Clear Filter
-                        </span>
-                    </button>
-                </p>
-            </div>
-            {% endif %}
 
-            <div class="search-form u-mb-2">
-                <div class="search-form__controls">
-                    <input type="text" id="search-box" placeholder="Search clients..." class="search-form__input">
-                    <button id="export-csv-btn" class="btn btn--primary">
-                        <span class="btn__label">
-                            <i data-lucide="download" class="btn__icon"></i>
-                            Export CSV
-                        </span>
-                    </button>
-                    {% if user.permission_level in ['admin', 'billing'] %}
-                    <button id="export-zip-btn" class="btn btn--primary">
-                        <span class="btn__label">
-                            <i data-lucide="archive" class="btn__icon"></i>
-                            Export All Invoices (ZIP)
-                        </span>
-                    </button>
-                    <button id="accept-all-btn" class="btn btn--success">
-                        <span class="btn__label">
-                            <i data-lucide="check-circle" class="btn__icon"></i>
-                            Accept All Bills & Archive
-                        </span>
-                    </button>
-                    {% endif %}
-                    <button id="refresh-btn" class="btn">
-                        <span class="btn__label">
-                            <i data-lucide="refresh-cw" class="btn__icon"></i>
-                            Refresh
-                        </span>
-                    </button>
-                </div>
+        <div class="card">
+            <div class="card__header">
+                <h2 class="card__title">Client Billing Summary</h2>
             </div>
-
-            <div class="card">
-                <div class="card__header">
-                    <h2 class="card__title">Client Billing Summary</h2>
-                </div>
-                <div class="card__body">
-                    <p id="loading-message">Loading billing data...</p>
-                    <div id="billing-table"></div>
-                </div>
+            <div class="card__body">
+                <p id="loading-message">Loading billing data...</p>
+                <div id="billing-table"></div>
             </div>
         </div>
     </div>
+</div>
+{% endblock %}
 
-    <script>
-        let billingData = [];
-        let filteredData = [];
-        let sortColumn = 'name';
-        let sortDirection = 'asc';
-        let currentPage = 1;
-        let itemsPerPage = 999999; // Show all by default
+{% block scripts %}
+<script>
+    let billingData = [];
+    let filteredData = [];
+    let sortColumn = 'name';
+    let sortDirection = 'asc';
+    let currentPage = 1;
+    let itemsPerPage = 999999; // Show all by default
 
-        // Fetch billing dashboard data via API
-        function fetchBillingData() {
-            document.getElementById('loading-message').style.display = 'block';
-            fetch('/ledger/api/billing/dashboard?year={{ current_year }}&month={{ current_month }}', {
-                credentials: 'same-origin'
+    // Fetch billing dashboard data via API
+    function fetchBillingData() {
+        document.getElementById('loading-message').style.display = 'block';
+        fetch('/ledger/api/billing/dashboard?year={{ current_year }}&month={{ current_month }}', {
+            credentials: 'same-origin'
+        })
+            .then(response => {
+                if (!response.ok && response.status === 401) {
+                    window.location.href = '/ledger/login';
+                    return;
+                }
+                return response.json();
             })
-                .then(response => {
-                    if (!response.ok && response.status === 401) {
-                        window.location.href = '/ledger/login';
-                        return;
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    document.getElementById('loading-message').style.display = 'none';
+            .then(data => {
+                document.getElementById('loading-message').style.display = 'none';
 
-                    if (data.error) {
-                        const tableDiv = document.getElementById('billing-table');
-                        tableDiv.innerHTML = `
-                            <div class="alert alert--error">
-                                <p><strong><i data-lucide="alert-circle" style="width: 16px; height: 16px; vertical-align: middle;"></i> Error:</strong> ${data.error}</p>
-                                <details class="u-mt-1">
-                                    <summary style="cursor: pointer; font-weight: bold;">View Error Details</summary>
-                                    <pre class="code-block u-mt-1">${data.details || 'No details available'}</pre>
-                                </details>
-                            </div>
-                        `;
-                        lucide.createIcons();
-                        return;
-                    }
+                if (data.error) {
+                    const tableDiv = document.getElementById('billing-table');
+                    tableDiv.innerHTML = `
+                        <div class="alert alert--error">
+                            <p><strong><i data-lucide="alert-circle" style="width: 16px; height: 16px; vertical-align: middle;"></i> Error:</strong> ${data.error}</p>
+                            <details class="u-mt-1">
+                                <summary style="cursor: pointer; font-weight: bold;">View Error Details</summary>
+                                <pre class="code-block u-mt-1">${data.details || 'No details available'}</pre>
+                            </details>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    return;
+                }
 
-                    if (data.warning) {
-                        const tableDiv = document.getElementById('billing-table');
-                        tableDiv.innerHTML = `
-                            <div class="alert alert--warning">
-                                <p><strong><i data-lucide="alert-triangle" style="width: 16px; height: 16px; vertical-align: middle;"></i> Warning:</strong> ${data.warning}</p>
-                                <p>Please ensure the Codex service is running and accessible.</p>
-                            </div>
-                        `;
-                        lucide.createIcons();
-                        return;
-                    }
+                if (data.warning) {
+                    const tableDiv = document.getElementById('billing-table');
+                    tableDiv.innerHTML = `
+                        <div class="alert alert--warning">
+                            <p><strong><i data-lucide="alert-triangle" style="width: 16px; height: 16px; vertical-align: middle;"></i> Warning:</strong> ${data.warning}</p>
+                            <p>Please ensure the Codex service is running and accessible.</p>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    return;
+                }
 
-                    if (data.companies.length === 0) {
-                        document.getElementById('billing-table').innerHTML = '<p>No billing data available. Add companies in Codex to see billing information.</p>';
-                        return;
-                    }
+                if (data.companies.length === 0) {
+                    document.getElementById('billing-table').innerHTML = '<p>No billing data available. Add companies in Codex to see billing information.</p>';
+                    return;
+                }
 
-                    billingData = data.companies;
-                    filteredData = [...billingData];
+                billingData = data.companies;
+                filteredData = [...billingData];
 
-                    // Apply filter if specified
-                    const filterType = '{{ filter_type }}';
-                    if (filterType === 'active') {
-                        // Show only contracts that are not expired
-                        filteredData = filteredData.filter(company => {
-                            const endDate = company.contract_end_date;
-                            if (!endDate || endDate === 'N/A' || endDate === 'Month to Month') return true;
-                            return new Date(endDate) >= new Date();
-                        });
-                    } else if (filterType === 'expiring') {
-                        // Show only contracts expiring in next 30 days
-                        const today = new Date();
-                        const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-                        filteredData = filteredData.filter(company => {
-                            const endDate = company.contract_end_date;
-                            if (!endDate || endDate === 'N/A' || endDate === 'Month to Month') return false;
-                            const contractEnd = new Date(endDate);
-                            return contractEnd >= today && contractEnd <= thirtyDaysFromNow;
-                        });
-                    }
-
-                    // Sort alphabetically by name on initial load
-                    sortColumn = 'name';
-                    sortDirection = 'asc';
-                    filteredData.sort((a, b) => {
-                        const aVal = (a.name || '').toLowerCase();
-                        const bVal = (b.name || '').toLowerCase();
-                        return aVal.localeCompare(bVal);
+                // Apply filter if specified
+                const filterType = '{{ filter_type }}';
+                if (filterType === 'active') {
+                    // Show only contracts that are not expired
+                    filteredData = filteredData.filter(company => {
+                        const endDate = company.contract_end_date;
+                        if (!endDate || endDate === 'N/A' || endDate === 'Month to Month') return true;
+                        return new Date(endDate) >= new Date();
                     });
+                } else if (filterType === 'expiring') {
+                    // Show only contracts expiring in next 30 days
+                    const today = new Date();
+                    const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+                    filteredData = filteredData.filter(company => {
+                        const endDate = company.contract_end_date;
+                        if (!endDate || endDate === 'N/A' || endDate === 'Month to Month') return false;
+                        const contractEnd = new Date(endDate);
+                        return contractEnd >= today && contractEnd <= thirtyDaysFromNow;
+                    });
+                }
 
-                    renderTable();
-                })
-                .catch(error => {
-                    document.getElementById('loading-message').style.display = 'none';
-                    document.getElementById('billing-table').innerHTML = '<p>Error loading billing data.</p>';
-                    console.error('Error:', error);
+                // Sort alphabetically by name on initial load
+                sortColumn = 'name';
+                sortDirection = 'asc';
+                filteredData.sort((a, b) => {
+                    const aVal = (a.name || '').toLowerCase();
+                    const bVal = (b.name || '').toLowerCase();
+                    return aVal.localeCompare(bVal);
                 });
-        }
 
-        function getPlanBadgeClass(plan) {
-            if (!plan || plan === 'N/A' || plan === 'No Plan') {
-                return '';
-            }
+                renderTable();
+            })
+            .catch(error => {
+                document.getElementById('loading-message').style.display = 'none';
+                document.getElementById('billing-table').innerHTML = '<p>Error loading billing data.</p>';
+                console.error('Error:', error);
+            });
+    }
 
-            const planLower = plan.toLowerCase();
-
-            // Platinum - Metallic platinum badge
-            if (planLower.includes('platinum')) {
-                return 'badge--platinum';
-            }
-
-            // Premium - Success (green)
-            if (planLower.includes('premium')) {
-                return 'badge--success';
-            }
-
-            // [PLAN-C] (high tier hourly) - Gold
-            if (planLower.includes('advanced')) {
-                return 'badge--gold';
-            }
-
-            // [PLAN-D] (low tier hourly) - Info (blue)
-            if (planLower.includes('basic')) {
-                return 'badge--info';
-            }
-
-            // Misc hourly plans - Warning (yellow/orange)
-            if (planLower.includes('break fix') || planLower.includes('pro services')) {
-                return 'badge--warning';
-            }
-
-            // Network only - secondary (gray)
-            if (planLower.includes('network')) {
-                return 'badge--secondary';
-            }
-
-            // Inactive/Legacy
-            if (planLower.includes('inactive') || planLower.includes('legacy')) {
-                return 'badge--secondary';
-            }
-
+    function getPlanBadgeClass(plan) {
+        if (!plan || plan === 'N/A' || plan === 'No Plan') {
             return '';
         }
 
-        function sortData(column) {
-            if (sortColumn === column) {
-                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                sortColumn = column;
-                sortDirection = 'asc';
+        const planLower = plan.toLowerCase();
+
+        // Platinum - Metallic platinum badge
+        if (planLower.includes('platinum')) {
+            return 'badge--platinum';
+        }
+
+        // Premium - Success (green)
+        if (planLower.includes('premium')) {
+            return 'badge--success';
+        }
+
+        // Advanced (high tier hourly) - Gold
+        if (planLower.includes('advanced')) {
+            return 'badge--gold';
+        }
+
+        // Basic (low tier hourly) - Info (blue)
+        if (planLower.includes('basic')) {
+            return 'badge--info';
+        }
+
+        // Misc hourly plans - Warning (yellow/orange)
+        if (planLower.includes('break fix') || planLower.includes('pro services')) {
+            return 'badge--warning';
+        }
+
+        // Network only - secondary (gray)
+        if (planLower.includes('network')) {
+            return 'badge--secondary';
+        }
+
+        // Inactive/Legacy
+        if (planLower.includes('inactive') || planLower.includes('legacy')) {
+            return 'badge--secondary';
+        }
+
+        return '';
+    }
+
+    function sortData(column) {
+        if (sortColumn === column) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortColumn = column;
+            sortDirection = 'asc';
+        }
+
+        filteredData.sort((a, b) => {
+            let aVal = a[column];
+            let bVal = b[column];
+
+            // Handle numeric columns
+            if (['workstations', 'servers', 'vms', 'users', 'backup', 'hours', 'total_bill'].includes(column)) {
+                aVal = parseFloat(aVal) || 0;
+                bVal = parseFloat(bVal) || 0;
             }
 
-            filteredData.sort((a, b) => {
-                let aVal = a[column];
-                let bVal = b[column];
+            // Handle string columns
+            if (typeof aVal === 'string') {
+                aVal = aVal.toLowerCase();
+                bVal = bVal.toLowerCase();
+            }
 
-                // Handle numeric columns
-                if (['workstations', 'servers', 'vms', 'users', 'backup', 'hours', 'total_bill'].includes(column)) {
-                    aVal = parseFloat(aVal) || 0;
-                    bVal = parseFloat(bVal) || 0;
-                }
+            if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
 
-                // Handle string columns
-                if (typeof aVal === 'string') {
-                    aVal = aVal.toLowerCase();
-                    bVal = bVal.toLowerCase();
-                }
+        renderTable();
+    }
 
-                if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-                if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-                return 0;
-            });
+    function filterData() {
+        const searchTerm = document.getElementById('search-box').value.toLowerCase();
+        filteredData = billingData.filter(company => {
+            return company.name.toLowerCase().includes(searchTerm) ||
+                   company.account_number.toString().includes(searchTerm) ||
+                   (company.billing_plan && company.billing_plan.toLowerCase().includes(searchTerm));
+        });
+        currentPage = 1; // Reset to first page on search
+        renderTable();
+    }
 
-            renderTable();
-        }
+    function changePage(newPage) {
+        currentPage = newPage;
+        renderTable();
+    }
 
-        function filterData() {
-            const searchTerm = document.getElementById('search-box').value.toLowerCase();
-            filteredData = billingData.filter(company => {
-                return company.name.toLowerCase().includes(searchTerm) ||
-                       company.account_number.toString().includes(searchTerm) ||
-                       (company.billing_plan && company.billing_plan.toLowerCase().includes(searchTerm));
-            });
-            currentPage = 1; // Reset to first page on search
-            renderTable();
-        }
+    function changePageSize(newSize) {
+        itemsPerPage = parseInt(newSize);
+        currentPage = 1;
+        renderTable();
+    }
 
-        function changePage(newPage) {
-            currentPage = newPage;
-            renderTable();
-        }
+    function renderTable() {
+        const tableDiv = document.getElementById('billing-table');
 
-        function changePageSize(newSize) {
-            itemsPerPage = parseInt(newSize);
-            currentPage = 1;
-            renderTable();
-        }
+        // Calculate pagination
+        const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+        const pageData = filteredData.slice(startIndex, endIndex);
 
-        function renderTable() {
-            const tableDiv = document.getElementById('billing-table');
+        let html = '<div class="table-wrapper"><table class="data-table"><thead><tr>';
+        html += '<th class="sortable-header" onclick="sortData(\'name\')">Company <span class="sort-indicator">' + (sortColumn === 'name' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '<th class="sortable-header" onclick="sortData(\'account_number\')">Account # <span class="sort-indicator">' + (sortColumn === 'account_number' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '<th class="sortable-header" onclick="sortData(\'billing_plan\')">Plan <span class="sort-indicator">' + (sortColumn === 'billing_plan' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '<th class="sortable-header" onclick="sortData(\'support_level\')">Support Level <span class="sort-indicator">' + (sortColumn === 'support_level' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '<th class="sortable-header" onclick="sortData(\'contract_term_length\')">Term <span class="sort-indicator">' + (sortColumn === 'contract_term_length' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '<th class="sortable-header" onclick="sortData(\'contract_end_date\')">Contract End <span class="sort-indicator">' + (sortColumn === 'contract_end_date' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '<th class="sortable-header" onclick="sortData(\'workstations\')">Workstations <span class="sort-indicator">' + (sortColumn === 'workstations' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '<th class="sortable-header" onclick="sortData(\'servers\')">Servers <span class="sort-indicator">' + (sortColumn === 'servers' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '<th class="sortable-header" onclick="sortData(\'vms\')">VMs <span class="sort-indicator">' + (sortColumn === 'vms' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '<th class="sortable-header" onclick="sortData(\'users\')">Users <span class="sort-indicator">' + (sortColumn === 'users' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '<th class="sortable-header" onclick="sortData(\'backup\')">Backup (TB) <span class="sort-indicator">' + (sortColumn === 'backup' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '<th class="sortable-header" onclick="sortData(\'hours\')">Hours (This Year) <span class="sort-indicator">' + (sortColumn === 'hours' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '<th class="sortable-header" onclick="sortData(\'total_bill\')">Total Bill <span class="sort-indicator">' + (sortColumn === 'total_bill' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
+        html += '</tr></thead><tbody>';
 
-            // Calculate pagination
-            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
-            const pageData = filteredData.slice(startIndex, endIndex);
+        pageData.forEach(company => {
+            html += '<tr>';
+            html += `<td><a href="/ledger/client/${company.account_number}"><strong>${company.name}</strong></a></td>`;
+            html += `<td>${company.account_number}</td>`;
+            const planBadgeClass = getPlanBadgeClass(company.billing_plan);
+            const planDisplay = company.billing_plan || 'No Plan';
+            html += `<td><span class="badge ${planBadgeClass}">${planDisplay}</span></td>`;
+            html += `<td>${company.support_level || 'N/A'}</td>`;
+            html += `<td>${company.contract_term_length || 'N/A'}</td>`;
 
-            let html = '<div class="table-wrapper"><table class="data-table"><thead><tr>';
-            html += '<th class="sortable-header" onclick="sortData(\'name\')">Company <span class="sort-indicator">' + (sortColumn === 'name' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '<th class="sortable-header" onclick="sortData(\'account_number\')">Account # <span class="sort-indicator">' + (sortColumn === 'account_number' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '<th class="sortable-header" onclick="sortData(\'billing_plan\')">Plan <span class="sort-indicator">' + (sortColumn === 'billing_plan' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '<th class="sortable-header" onclick="sortData(\'support_level\')">Support Level <span class="sort-indicator">' + (sortColumn === 'support_level' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '<th class="sortable-header" onclick="sortData(\'contract_term_length\')">Term <span class="sort-indicator">' + (sortColumn === 'contract_term_length' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '<th class="sortable-header" onclick="sortData(\'contract_end_date\')">Contract End <span class="sort-indicator">' + (sortColumn === 'contract_end_date' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '<th class="sortable-header" onclick="sortData(\'workstations\')">Workstations <span class="sort-indicator">' + (sortColumn === 'workstations' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '<th class="sortable-header" onclick="sortData(\'servers\')">Servers <span class="sort-indicator">' + (sortColumn === 'servers' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '<th class="sortable-header" onclick="sortData(\'vms\')">VMs <span class="sort-indicator">' + (sortColumn === 'vms' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '<th class="sortable-header" onclick="sortData(\'users\')">Users <span class="sort-indicator">' + (sortColumn === 'users' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '<th class="sortable-header" onclick="sortData(\'backup\')">Backup (TB) <span class="sort-indicator">' + (sortColumn === 'backup' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '<th class="sortable-header" onclick="sortData(\'hours\')">Hours (This Year) <span class="sort-indicator">' + (sortColumn === 'hours' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '<th class="sortable-header" onclick="sortData(\'total_bill\')">Total Bill <span class="sort-indicator">' + (sortColumn === 'total_bill' ? (sortDirection === 'asc' ? '↑' : '↓') : '') + '</span></th>';
-            html += '</tr></thead><tbody>';
+            // Check if contract is expired
+            const contractEndDate = company.contract_end_date;
+            const isExpired = contractEndDate && contractEndDate !== 'N/A' && contractEndDate !== 'Month to Month' && new Date(contractEndDate) < new Date();
+            html += `<td ${isExpired ? 'class="contract-expired"' : ''}>${contractEndDate || 'N/A'}</td>`;
 
-            pageData.forEach(company => {
-                html += '<tr>';
-                html += `<td><a href="/ledger/client/${company.account_number}"><strong>${company.name}</strong></a></td>`;
-                html += `<td>${company.account_number}</td>`;
-                const planBadgeClass = getPlanBadgeClass(company.billing_plan);
-                const planDisplay = company.billing_plan || 'No Plan';
-                html += `<td><span class="badge ${planBadgeClass}">${planDisplay}</span></td>`;
-                html += `<td>${company.support_level || 'N/A'}</td>`;
-                html += `<td>${company.contract_term_length || 'N/A'}</td>`;
+            html += `<td>${company.workstations}</td>`;
+            html += `<td>${company.servers}</td>`;
+            html += `<td>${company.vms}</td>`;
+            html += `<td>${company.users}</td>`;
+            html += `<td>${company.backup.toFixed(2)}</td>`;
+            html += `<td>${company.hours.toFixed(2)}</td>`;
+            html += `<td>$${company.total_bill.toFixed(2)}</td>`;
+            html += '</tr>';
+        });
 
-                // Check if contract is expired
-                const contractEndDate = company.contract_end_date;
-                const isExpired = contractEndDate && contractEndDate !== 'N/A' && contractEndDate !== 'Month to Month' && new Date(contractEndDate) < new Date();
-                html += `<td ${isExpired ? 'class="contract-expired"' : ''}>${contractEndDate || 'N/A'}</td>`;
+        html += '</tbody></table></div>';
 
-                html += `<td>${company.workstations}</td>`;
-                html += `<td>${company.servers}</td>`;
-                html += `<td>${company.vms}</td>`;
-                html += `<td>${company.users}</td>`;
-                html += `<td>${company.backup.toFixed(2)}</td>`;
-                html += `<td>${company.hours.toFixed(2)}</td>`;
-                html += `<td>$${company.total_bill.toFixed(2)}</td>`;
-                html += '</tr>';
-            });
+        // Pagination controls
+        html += '<div class="results-header u-mt-2">';
+        html += '<div class="results-header__count">';
+        html += `<label for="per-page-select">Per page:</label> `;
+        html += `<select id="per-page-select" onchange="changePageSize(this.value)">`;
+        html += `<option value="25" ${itemsPerPage === 25 ? 'selected' : ''}>25</option>`;
+        html += `<option value="50" ${itemsPerPage === 50 ? 'selected' : ''}>50</option>`;
+        html += `<option value="100" ${itemsPerPage === 100 ? 'selected' : ''}>100</option>`;
+        html += `<option value="999999" ${itemsPerPage >= 999999 ? 'selected' : ''}>All (${billingData.length})</option>`;
+        html += '</select>';
+        html += `<span class="u-ml-2">Showing ${startIndex + 1}-${endIndex} of ${filteredData.length} clients</span>`;
+        html += '</div>';
 
-            html += '</tbody></table></div>';
-
-            // Pagination controls
-            html += '<div class="results-header u-mt-2">';
-            html += '<div class="results-header__count">';
-            html += `<label for="per-page-select">Per page:</label> `;
-            html += `<select id="per-page-select" onchange="changePageSize(this.value)">`;
-            html += `<option value="25" ${itemsPerPage === 25 ? 'selected' : ''}>25</option>`;
-            html += `<option value="50" ${itemsPerPage === 50 ? 'selected' : ''}>50</option>`;
-            html += `<option value="100" ${itemsPerPage === 100 ? 'selected' : ''}>100</option>`;
-            html += `<option value="999999" ${itemsPerPage >= 999999 ? 'selected' : ''}>All (${billingData.length})</option>`;
-            html += '</select>';
-            html += `<span class="u-ml-2">Showing ${startIndex + 1}-${endIndex} of ${filteredData.length} clients</span>`;
+        if (totalPages > 1) {
+            html += '<div class="pagination">';
+            html += '<button onclick="changePage(1)" ' + (currentPage === 1 ? 'disabled' : '') + ' class="btn"><span class="btn__label"><i data-lucide="chevrons-left" class="btn__icon"></i> First</span></button> ';
+            html += '<button onclick="changePage(' + (currentPage - 1) + ')" ' + (currentPage === 1 ? 'disabled' : '') + ' class="btn"><span class="btn__label"><i data-lucide="chevron-left" class="btn__icon"></i> Previous</span></button> ';
+            html += `<span class="pagination__info">Page ${currentPage} of ${totalPages}</span> `;
+            html += '<button onclick="changePage(' + (currentPage + 1) + ')" ' + (currentPage === totalPages ? 'disabled' : '') + ' class="btn"><span class="btn__label">Next <i data-lucide="chevron-right" class="btn__icon"></i></span></button> ';
+            html += '<button onclick="changePage(' + totalPages + ')" ' + (currentPage === totalPages ? 'disabled' : '') + ' class="btn"><span class="btn__label">Last <i data-lucide="chevrons-right" class="btn__icon"></i></span></button>';
             html += '</div>';
-
-            if (totalPages > 1) {
-                html += '<div class="pagination">';
-                html += '<button onclick="changePage(1)" ' + (currentPage === 1 ? 'disabled' : '') + ' class="btn"><span class="btn__label"><i data-lucide="chevrons-left" class="btn__icon"></i> First</span></button> ';
-                html += '<button onclick="changePage(' + (currentPage - 1) + ')" ' + (currentPage === 1 ? 'disabled' : '') + ' class="btn"><span class="btn__label"><i data-lucide="chevron-left" class="btn__icon"></i> Previous</span></button> ';
-                html += `<span class="pagination__info">Page ${currentPage} of ${totalPages}</span> `;
-                html += '<button onclick="changePage(' + (currentPage + 1) + ')" ' + (currentPage === totalPages ? 'disabled' : '') + ' class="btn"><span class="btn__label">Next <i data-lucide="chevron-right" class="btn__icon"></i></span></button> ';
-                html += '<button onclick="changePage(' + totalPages + ')" ' + (currentPage === totalPages ? 'disabled' : '') + ' class="btn"><span class="btn__label">Last <i data-lucide="chevrons-right" class="btn__icon"></i></span></button>';
-                html += '</div>';
-            }
-
-            html += '</div>';
-            tableDiv.innerHTML = html;
-            lucide.createIcons();
         }
 
-        function exportToCSV() {
-            let csv = 'Company,Account #,Plan,Support Level,Term,Contract End,Workstations,Servers,VMs,Users,Backup (TB),Hours (This Year),Total Bill\n';
+        html += '</div>';
+        tableDiv.innerHTML = html;
+        lucide.createIcons();
+    }
 
-            filteredData.forEach(company => {
-                csv += `"${company.name}",`;
-                csv += `"${company.account_number}",`;
-                csv += `"${company.billing_plan || 'N/A'}",`;
-                csv += `"${company.support_level || 'N/A'}",`;
-                csv += `"${company.contract_term_length || 'N/A'}",`;
-                csv += `"${company.contract_end_date || 'N/A'}",`;
-                csv += `${company.workstations},`;
-                csv += `${company.servers},`;
-                csv += `${company.vms},`;
-                csv += `${company.users},`;
-                csv += `${company.backup.toFixed(2)},`;
-                csv += `${company.hours.toFixed(2)},`;
-                csv += `${company.total_bill.toFixed(2)}\n`;
-            });
+    function exportToCSV() {
+        let csv = 'Company,Account #,Plan,Support Level,Term,Contract End,Workstations,Servers,VMs,Users,Backup (TB),Hours (This Year),Total Bill\n';
 
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `billing_dashboard_{{ current_year }}_${String({{ current_month }}).padStart(2, '0')}.csv`;
-            a.click();
-            window.URL.revokeObjectURL(url);
+        filteredData.forEach(company => {
+            csv += `"${company.name}",`;
+            csv += `"${company.account_number}",`;
+            csv += `"${company.billing_plan || 'N/A'}",`;
+            csv += `"${company.support_level || 'N/A'}",`;
+            csv += `"${company.contract_term_length || 'N/A'}",`;
+            csv += `"${company.contract_end_date || 'N/A'}",`;
+            csv += `${company.workstations},`;
+            csv += `${company.servers},`;
+            csv += `${company.vms},`;
+            csv += `${company.users},`;
+            csv += `${company.backup.toFixed(2)},`;
+            csv += `${company.hours.toFixed(2)},`;
+            csv += `${company.total_bill.toFixed(2)}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `billing_dashboard_{{ current_year }}_${String({{ current_month }}).padStart(2, '0')}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+    function exportAllZIP() {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/ledger/export/all_bills';
+
+        const yearInput = document.createElement('input');
+        yearInput.type = 'hidden';
+        yearInput.name = 'year';
+        yearInput.value = {{ current_year }};
+        form.appendChild(yearInput);
+
+        const monthInput = document.createElement('input');
+        monthInput.type = 'hidden';
+        monthInput.name = 'month';
+        monthInput.value = {{ current_month }};
+        form.appendChild(monthInput);
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    }
+
+    // Accept all bills function
+    async function acceptAllBills() {
+        if (!confirm('Are you sure you want to accept and archive ALL bills for the current period? This will process ' + filteredData.length + ' bills.')) {
+            return;
         }
 
-        function exportAllZIP() {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/ledger/export/all_bills';
+        const btn = document.getElementById('accept-all-btn');
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="btn__label"><i data-lucide="loader" class="btn__icon"></i> Processing...</span>';
+        lucide.createIcons();
 
-            const yearInput = document.createElement('input');
-            yearInput.type = 'hidden';
-            yearInput.name = 'year';
-            yearInput.value = {{ current_year }};
-            form.appendChild(yearInput);
+        let success = 0;
+        let failed = 0;
+        let alreadyArchived = 0;
 
-            const monthInput = document.createElement('input');
-            monthInput.type = 'hidden';
-            monthInput.name = 'month';
-            monthInput.value = {{ current_month }};
-            form.appendChild(monthInput);
+        for (const client of filteredData) {
+            try {
+                const response = await fetch('/api/bill/accept', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        account_number: client.account_number,
+                        year: {{ current_year }},
+                        month: {{ current_month }},
+                        notes: 'Bulk accept from dashboard'
+                    })
+                });
 
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-        }
-
-        // Accept all bills function
-        async function acceptAllBills() {
-            if (!confirm('Are you sure you want to accept and archive ALL bills for the current period? This will process ' + filteredData.length + ' bills.')) {
-                return;
-            }
-
-            const btn = document.getElementById('accept-all-btn');
-            const originalHTML = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="btn__label"><i data-lucide="loader" class="btn__icon"></i> Processing...</span>';
-            lucide.createIcons();
-
-            let success = 0;
-            let failed = 0;
-            let alreadyArchived = 0;
-
-            for (const client of filteredData) {
-                try {
-                    const response = await fetch('/api/bill/accept', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            account_number: client.account_number,
-                            year: {{ current_year }},
-                            month: {{ current_month }},
-                            notes: 'Bulk accept from dashboard'
-                        })
-                    });
-
-                    if (response.status === 201) {
-                        success++;
-                    } else if (response.status === 409) {
-                        alreadyArchived++;
-                    } else {
-                        failed++;
-                    }
-                } catch (err) {
+                if (response.status === 201) {
+                    success++;
+                } else if (response.status === 409) {
+                    alreadyArchived++;
+                } else {
                     failed++;
                 }
+            } catch (err) {
+                failed++;
             }
-
-            btn.disabled = false;
-            btn.innerHTML = originalHTML;
-            lucide.createIcons();
-
-            alert(`Accept All Complete:\n\n✓ ${success} bills archived\n⚠ ${alreadyArchived} already archived\n✗ ${failed} failed`);
-
-            // Refresh the data to show updated archive status
-            fetchBillingData();
         }
 
-        // Event listeners
-        document.getElementById('search-box').addEventListener('input', filterData);
-        document.getElementById('export-csv-btn').addEventListener('click', exportToCSV);
-        document.getElementById('refresh-btn').addEventListener('click', fetchBillingData);
-        {% if user.permission_level in ['admin', 'billing'] %}
-        document.getElementById('export-zip-btn').addEventListener('click', exportAllZIP);
-        document.getElementById('accept-all-btn').addEventListener('click', acceptAllBills);
-        {% endif %}
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+        lucide.createIcons();
 
-        // Initial load
+        alert(`Accept All Complete:\n\n✓ ${success} bills archived\n⚠ ${alreadyArchived} already archived\n✗ ${failed} failed`);
+
+        // Refresh the data to show updated archive status
         fetchBillingData();
+    }
 
-        // Initialize Lucide icons
-        window.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-        });
-    </script>
-    <div class="version-footer">
-        <span class="version-footer__text">{{ app_service_name }} v{{ app_version }}</span>
-    </div>
-</body>
-</html>
+    // Event listeners
+    document.getElementById('search-box').addEventListener('input', filterData);
+    document.getElementById('export-csv-btn').addEventListener('click', exportToCSV);
+    document.getElementById('refresh-btn').addEventListener('click', fetchBillingData);
+    {% if user.permission_level in ['admin', 'billing'] %}
+    document.getElementById('export-zip-btn').addEventListener('click', exportAllZIP);
+    document.getElementById('accept-all-btn').addEventListener('click', acceptAllBills);
+    {% endif %}
+
+    // Initial load
+    fetchBillingData();
+</script>
+{% endblock %}
