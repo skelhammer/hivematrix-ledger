@@ -311,7 +311,7 @@ def init_db_headless(db_host, db_port, db_name, db_user, db_password, migrate_on
         config.add_section('database_credentials')
     config.set('database_credentials', 'db_host', db_host)
     config.set('database_credentials', 'db_port', db_port)
-    config.set('database_credentials', 'db_name', db_name)
+    config.set('database_credentials', 'db_dbname', db_name)
     config.set('database_credentials', 'db_user', db_user)
 
     with open(config_path, 'w') as configfile:
