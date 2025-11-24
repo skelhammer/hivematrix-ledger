@@ -3,13 +3,17 @@
 {% block title %}Admin Settings{% endblock %}
 
 {% block content %}
-    <div class="card">
-        <div class="card__header">
-            <h1 class="card__title">Admin Settings</h1>
+    <div class="page-header">
+        <div class="page-header__content">
+            <h1 class="page-header__title">Admin Settings</h1>
         </div>
-        <div class="card__body">
-            <p>Welcome, <strong>{{ user.name }}</strong></p>
-            <p>Centralized administration for HiveMatrix Ledger billing service.</p>
+        <div class="page-header__actions">
+            <button class="btn" onclick="window.location.href='/ledger'">
+                <span class="btn__label">
+                    <i data-lucide="arrow-left" class="btn__icon"></i>
+                    Back to Dashboard
+                </span>
+            </button>
         </div>
     </div>
 
@@ -123,14 +127,4 @@
         </div>
     </div>
     {% endif %}
-
-    <div class="u-mt-2">
-        <a href="/ledger/" class="btn">
-            <span class="btn__label">
-                <i data-lucide="arrow-left" class="btn__icon"></i>
-                Back to Dashboard
-            </span>
-        </a>
-    </div>
-
 {% endblock %}

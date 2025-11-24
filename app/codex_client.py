@@ -258,7 +258,7 @@ class CodexBillingClient:
 
         Args:
             plan_name: Name of the billing plan
-            term_length: Term length (e.g., '1-Year', 'Month to Month')
+            term_length: Term length (e.g., '1 Year', 'Month to Month')
 
         Returns:
             dict: Billing plan data, or None if not found

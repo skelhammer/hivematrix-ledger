@@ -738,6 +738,10 @@ def api_billing_dashboard():
             if not account_number:
                 continue
 
+            # Skip inactive clients
+            if company.get('billing_plan', '').lower() == 'inactive':
+                continue
+
             codex_data = get_billing_data_from_codex(account_number)
             if not codex_data:
                 continue
@@ -795,6 +799,10 @@ def api_billing_dashboard():
     for item in companies_bulk:
         company = item.get('company')
         if not company or not company.get('account_number'):
+            continue
+
+        # Skip inactive clients
+        if company.get('billing_plan', '').lower() == 'inactive':
             continue
 
         # Calculate billing using bulk-fetched data including tickets

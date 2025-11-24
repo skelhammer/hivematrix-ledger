@@ -3,18 +3,21 @@
 {% block title %}{{ data.client.name }} - Billing Details{% endblock %}
 
 {% block content %}
-    <div class="card">
-        <div class="card__header">
-            <h1 class="card__title">{{ data.client.name }}</h1>
-            <div class="card__header-actions">
-                <button class="btn" onclick="window.location.href='/ledger/'">
-                    <span class="btn__label">
-                        <i data-lucide="arrow-left" class="btn__icon"></i>
-                        Back to Dashboard
-                    </span>
-                </button>
-            </div>
+    <div class="page-header">
+        <div class="page-header__content">
+            <h1 class="page-header__title">{{ data.client.name }}</h1>
         </div>
+        <div class="page-header__actions">
+            <button class="btn" onclick="window.location.href='/ledger/clients'">
+                <span class="btn__label">
+                    <i data-lucide="arrow-left" class="btn__icon"></i>
+                    Back to Clients
+                </span>
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
         <div class="card__body">
             <div class="info-grid">
                 <div>

@@ -3,33 +3,32 @@
 {% block title %}{{ company.name }} - Billing Settings{% endblock %}
 
 {% block content %}
-    <div class="card">
-        <div class="card__header">
-            <h1 class="card__title">Override Settings for {{ company.name }}</h1>
+    <div class="page-header">
+        <div class="page-header__content">
+            <h1 class="page-header__title">Override Settings for {{ company.name }}</h1>
+            <p class="page-header__description">Account Number: {{ company.account_number }}</p>
         </div>
-        <div class="card__body">
-            <p><strong>Account Number:</strong> {{ company.account_number }}</p>
-            <p>
-                <a href="/ledger/client/{{ company.account_number }}" class="btn">
-                    <span class="btn__label">
-                        <i data-lucide="arrow-left" class="btn__icon"></i>
-                        Back to Billing Details
-                    </span>
-                </a>
-            </p>
+        <div class="page-header__actions">
+            <button class="btn" onclick="window.location.href='/ledger/client/{{ company.account_number }}'">
+                <span class="btn__label">
+                    <i data-lucide="arrow-left" class="btn__icon"></i>
+                    Back to Billing Details
+                </span>
+            </button>
         </div>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            <div class="toast-container" id="toast-container">
-                {% for category, message in messages %}
-                    <div class="toast toast--{{ 'success' if category == 'success' else 'warning' if category == 'warning' else 'info' if category == 'info' else 'error' }}" onclick="dismissToast(this)">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-        {% endwith %}
     </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="toast-container" id="toast-container">
+            {% for category, message in messages %}
+                <div class="toast toast--{{ 'success' if category == 'success' else 'warning' if category == 'warning' else 'info' if category == 'info' else 'error' }}" onclick="dismissToast(this)">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
 
     <form method="POST" action="/ledger/client/{{ company.account_number }}/settings">
         <!-- Billing Rate Overrides -->
