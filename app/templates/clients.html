@@ -14,20 +14,20 @@
 {%- endmacro %}
 
 <div class="page-header">
-    <h1 class="page-header__title">Clients</h1>
+    <div class="page-header__content">
+        <h1 class="page-header__title">Clients</h1>
+    </div>
+    <div class="page-header__actions">
+        <button class="btn" onclick="window.location.href='/ledger/'">
+            <span class="btn__label">
+                <i data-lucide="arrow-left" class="btn__icon"></i>
+                Back to Dashboard
+            </span>
+        </button>
+    </div>
 </div>
 
 <div class="card">
-    <div class="card__header">
-        <div class="card__header-actions">
-            <button class="btn" onclick="window.location.href='/ledger/'">
-                <span class="btn__label">
-                    <i data-lucide="arrow-left" class="btn__icon"></i>
-                    Back to Dashboard
-                </span>
-            </button>
-        </div>
-    </div>
     <div class="card__body">
         {% if filter_type %}
         <div class="alert alert--info u-mb-2">
