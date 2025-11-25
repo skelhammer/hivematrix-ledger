@@ -140,3 +140,4 @@ cython_debug/
 .pdm-build/
 services.json
 billing_config.json
+VERSION
