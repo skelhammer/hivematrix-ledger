@@ -288,6 +288,28 @@ def init_db_headless(db_host, db_port, db_name, db_user, db_password, migrate_on
 
     config = configparser.RawConfigParser()
 
+    # Check if database exists, create if needed (matches Codex pattern)
+    check_cmd = f"sudo -u postgres psql -tAc \"SELECT 1 FROM pg_database WHERE datname='{db_name}'\""
+    try:
+        result = subprocess.run(check_cmd, shell=True, capture_output=True, text=True, timeout=5)
+        db_exists = "1" in result.stdout
+    except Exception:
+        db_exists = False
+
+    if not db_exists:
+        print(f"\n→ Database '{db_name}' does not exist. Creating it...")
+        create_cmd = f"sudo -u postgres psql -c \"CREATE DATABASE {db_name} OWNER {db_user};\""
+        try:
+            result = subprocess.run(create_cmd, shell=True, capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                print(f"✓ Database '{db_name}' created successfully!")
+            else:
+                print(f"✗ Failed to create database: {result.stderr}", file=sys.stderr)
+                sys.exit(1)
+        except Exception as e:
+            print(f"✗ Failed to create database: {e}", file=sys.stderr)
+            sys.exit(1)
+
     # Build connection string
     escaped_password = quote_plus(db_password)
     conn_string = f"postgresql+psycopg2://{db_user}:{escaped_password}@{db_host}:{db_port}/{db_name}"
