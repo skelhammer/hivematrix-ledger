@@ -709,9 +709,9 @@ def api_billing_dashboard():
         import traceback
         error_details = traceback.format_exc()
         current_app.logger.error(f"Dashboard API error: {e}\n{error_details}")
+        # Return generic error message - don't expose internal details to client
         return jsonify({
-            'error': f'Dashboard API error: {str(e)}',
-            'details': error_details,
+            'error': 'Failed to load dashboard data',
             'billing_period': f'{datetime.now().year}-{datetime.now().month:02d}',
             'companies': []
         }), 500

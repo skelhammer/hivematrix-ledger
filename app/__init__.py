@@ -1,4 +1,5 @@
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 import json
 import os
 import secrets
@@ -6,6 +7,19 @@ from flask_limiter import Limiter
 from app.rate_limit_key import get_user_id_or_ip
 
 app = Flask(__name__, instance_relative_config=True)
+
+# Apply ProxyFix to handle X-Forwarded headers from Nexus proxy
+# This is critical for correct client IP detection for rate limiting
+app.wsgi_app = ProxyFix(
+    app.wsgi_app,
+    x_for=1,      # Trust X-Forwarded-For
+    x_proto=1,    # Trust X-Forwarded-Proto
+    x_host=1,     # Trust X-Forwarded-Host
+    x_prefix=1    # Trust X-Forwarded-Prefix
+)
+
+# Set maximum content length for incoming requests (16MB)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 # Configure logging level from environment
 import logging
